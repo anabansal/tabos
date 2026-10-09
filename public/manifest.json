@@ -1,0 +1,56 @@
+{
+  "manifest_version": 3,
+  "name": "TabOS — Tab Manager",
+  "short_name": "TabOS",
+  "version": "1.0.0",
+  "description": "Manage every tab across all your windows: workspaces, auto-sleep, archive, recovery and local-first AI search.",
+  "minimum_chrome_version": "120",
+  "incognito": "not_allowed",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_title": "TabOS",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": [
+    "tabs",
+    "tabGroups",
+    "storage",
+    "unlimitedStorage",
+    "alarms",
+    "notifications",
+    "favicon",
+    "system.memory"
+  ],
+  "optional_permissions": ["history", "sessions", "scripting"],
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
+  "omnibox": { "keyword": "tab" },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": { "default": "Alt+Shift+K" },
+      "description": "Open the TabOS popup"
+    },
+    "open-dashboard": {
+      "suggested_key": { "default": "Alt+Shift+D" },
+      "description": "Open the TabOS dashboard"
+    },
+    "open-search": {
+      "description": "Open TabOS semantic search"
+    }
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}

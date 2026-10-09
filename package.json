@@ -1,0 +1,61 @@
+{
+  "name": "tabos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TabOS: an AI-assisted tab manager for Chrome. Workspaces, sleeping, archiving, recovery, and local-first semantic search.",
+  "license": "MIT",
+  "author": "Anant Bansal (https://github.com/anabansal)",
+  "homepage": "https://github.com/anabansal/tabos#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anabansal/tabos.git"
+  },
+  "bugs": {
+    "url": "https://github.com/anabansal/tabos/issues"
+  },
+  "keywords": [
+    "chrome-extension",
+    "tab-manager",
+    "manifest-v3",
+    "workspaces",
+    "tab-groups",
+    "semantic-search",
+    "productivity",
+    "react",
+    "typescript"
+  ],
+  "type": "module",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "dev": "vite build --watch --mode development",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "npm run build && node --test tests/e2e/extension.test.mjs",
+    "screenshots": "npm run build && node tests/e2e/walkthrough.mjs docs/screenshots",
+    "icons": "node scripts/make-icons.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
+    "dexie": "^4.4.6",
+    "dexie-react-hooks": "^4.4.0",
+    "lucide-react": "^1.54.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.3.5",
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.7.0",
+    "fake-indexeddb": "^6.2.5",
+    "puppeteer": "^25.13.0",
+    "typescript": "^5.7.2",
+    "vite": "^6.4.4",
+    "vitest": "^5.0.3"
+  }
+}
