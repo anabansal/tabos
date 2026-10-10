@@ -54,6 +54,6 @@ await dash.bringToFront();
 
 console.log('TabOS demo is running.');
 console.log('  • Click the puzzle-piece icon → pin TabOS, then click it for the popup (or Alt+Shift+K).');
-console.log('  • Dashboard: the tab that just opened. Try Organize, Clean, Search.');
+console.log('  • The TabOS tab that just opened: try Group Tabs, Tidy Up, and the search bar.');
 console.log('  • Close the Chrome window to quit.');
 browser.on('disconnected', () => process.exit(0));
