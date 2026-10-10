@@ -1,6 +1,7 @@
 // Opens a separate Chrome (Chrome for Testing) window with TabOS loaded and a set of sample tabs,
 // so you can try the extension without touching your own browser profile.
 // Run: npm run demo     (close the window to quit)
+//      node scripts/demo.mjs --light   opens fewer sample tabs on low-memory machines
 import puppeteer from 'puppeteer';
 import { mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -43,7 +44,9 @@ const extId = new URL(sw.url()).host;
 
 const existing = await browser.pages();
 if (existing.length <= 2) {
-  for (const url of SAMPLE_TABS) {
+  const light = process.argv.includes('--light');
+  const urls = light ? [...new Set(SAMPLE_TABS)].filter((_, i) => i % 2 === 0) : SAMPLE_TABS;
+  for (const url of urls) {
     const p = await browser.newPage();
     p.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {});
   }
