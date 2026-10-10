@@ -153,7 +153,7 @@ export async function resyncGroups(force = false): Promise<void> {
 /** Put a workspace's open tabs into one Chrome tab group per window. */
 export async function groupWorkspaceInChrome(workspaceId: string, onlyWindowId?: number): Promise<number> {
   const ws = await db.workspaces.get(workspaceId);
-  if (!ws) throw new Error('Workspace not found');
+  if (!ws) throw new Error('That group no longer exists');
   const recs = (await db.tabs.where('workspaceId').equals(workspaceId).toArray()).filter(isLive);
   const byWindow = new Map<number, number[]>();
   // Ask Chrome where each tab really is: stored window ids can lag right after moves and merges.

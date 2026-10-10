@@ -4,13 +4,15 @@ import type { TabRecord, Workspace } from '../shared/types';
 
 export interface DashboardData {
   records: TabRecord[];
+  /** User-facing name: "groups". Stored as workspaces. */
   workspaces: Workspace[];
   wsMap: Map<string, Workspace>;
   settings: Settings;
   saveSettings: (patch: SettingsPatch) => Promise<void>;
   windows: chrome.windows.Window[];
+  /** Live text in the toolbar search field; lists filter by it as you type. */
+  query: string;
   openRelated: (r: TabRecord) => void;
-  openClean: () => void;
 }
 
 const Ctx = createContext<DashboardData | null>(null);

@@ -24,7 +24,7 @@ export function StatusPill({ status }: { status: TabStatus }) {
   );
 }
 
-export function WsDot({ color, size = 9 }: { color: GroupColor | undefined; size?: number }) {
+export function WsDot({ color, size = 10 }: { color: GroupColor | undefined; size?: number }) {
   return <span className="ws-dot" style={{ background: color ? GROUP_HEX[color] : 'var(--border-strong)', width: size, height: size }} />;
 }
 
@@ -112,6 +112,8 @@ export function WorkspaceSelect({
 
 export interface MenuItem {
   label: string;
+  /** Renders a small section label instead of a button. */
+  heading?: boolean;
   icon?: typeof Inbox;
   onClick?: () => void;
   danger?: boolean;
@@ -158,6 +160,10 @@ export function Menu({ trigger, items, align = 'right' }: { trigger: (open: () =
           {items.map((it, i) =>
             it.divider ? (
               <hr key={i} />
+            ) : it.heading ? (
+              <div key={i} className="menu-label">
+                {it.label}
+              </div>
             ) : (
               <button
                 key={i}

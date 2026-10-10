@@ -382,7 +382,7 @@ export async function deleteRecords(ids: string[]): Promise<Outcome> {
 // ---------- assign / protect ----------
 
 export async function assignRecords(ids: string[], workspaceId: string | null): Promise<Outcome> {
-  if (workspaceId && !(await db.workspaces.get(workspaceId))) throw new Error('Workspace not found');
+  if (workspaceId && !(await db.workspaces.get(workspaceId))) throw new Error('That group no longer exists');
   const recs = await recordsByIds(ids);
   const now = Date.now();
   const changes: Array<{ recordId: string; prevWorkspaceId: string | null }> = [];

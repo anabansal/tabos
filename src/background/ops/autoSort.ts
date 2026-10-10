@@ -32,7 +32,7 @@ export async function autoSortTick(): Promise<number> {
   for (const c of plan.create) {
     const ws =
       (await findWorkspaceByName(c.name)) ??
-      (await createWorkspaceRecord({ name: c.name, color: c.color, source: 'ai', summary: `Created automatically from your ${c.name.toLowerCase()} tabs` }));
+      (await createWorkspaceRecord({ name: c.name, color: c.color, source: 'ai' }));
     if (!workspaces.some((w) => w.id === ws.id)) created.push(ws);
     for (const id of c.recordIds) assignments.push({ recordId: id, workspaceId: ws.id, reason: 'new topic' });
   }
@@ -64,7 +64,7 @@ export async function autoSortTick(): Promise<number> {
       }
     }
   }
-  const names = [...touched].map((id) => workspaces.find((w) => w.id === id)?.name ?? created.find((w) => w.id === id)?.name ?? 'workspace');
+  const names = [...touched].map((id) => workspaces.find((w) => w.id === id)?.name ?? created.find((w) => w.id === id)?.name ?? 'group');
   const entry = await logActivity(
     'organize',
     `Auto-sorted ${plural(changes.length, 'tab')} into ${names.slice(0, 3).join(', ')}${names.length > 3 ? '…' : ''}`,

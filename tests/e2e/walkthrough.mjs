@@ -68,64 +68,67 @@ try {
   );
 
   const dash = await browser.newPage();
-  await dash.goto(`chrome-extension://${extId}/dashboard.html#/welcome`);
-  await wait(1500);
-  await shot(dash, '01-home-first-run');
+  const errs = [];
+  dash.on('pageerror', (e) => errs.push(e.message));
+  dash.on('console', (m) => m.type() === 'error' && errs.push(m.text()));
+  const go = async (hash, wait_ = 1200) => {
+    await dash.goto(`chrome-extension://${extId}/dashboard.html#${hash}`);
+    await wait(wait_);
+  };
+  const click = (text) => dash.evaluate((t) => [...document.querySelectorAll('button')].find((b) => b.textContent.trim().includes(t))?.click(), text);
+
+  await go('/welcome', 1500);
+  await shot(dash, '01-tabs-first-run');
 
   const pop = await browser.newPage();
   await pop.goto(`chrome-extension://${extId}/popup.html`);
+  await pop.setViewport({ width: 360, height: 590 });
   await wait(800);
-  await pop.setViewport({ width: 380, height: 590 });
-  await wait(400);
   await (await pop.$('.popup-root')).screenshot({ path: `${OUT}/02-popup.png` });
   await pop.type('input', 'headph');
   await wait(400);
   await (await pop.$('.popup-root')).screenshot({ path: `${OUT}/03-popup-search.png` });
 
-  await dash.goto(`chrome-extension://${extId}/dashboard.html#/organize`);
-  await wait(800);
-  await shot(dash, '04-organize-start');
-  await dash.evaluate(() => [...document.querySelectorAll('button')].find((b) => b.textContent.includes('Suggest workspaces')).click());
+  await go('/group-tabs', 800);
+  await shot(dash, '04-group-tabs-start');
+  await click('Suggest Groups');
   await wait(2500);
-  await shot(dash, '05-organize-proposal');
-  await dash.evaluate(() => [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Apply').click());
-  await wait(500);
-  await shot(dash, '06-organize-confirm');
-  await dash.evaluate(() => [...document.querySelectorAll('.dialog button')].find((b) => b.textContent.trim() === 'Apply').click());
-  await wait(2000);
-  await dash.goto(`chrome-extension://${extId}/dashboard.html#/`);
-  await wait(1500);
-  await shot(dash, '07-home-organized');
-
-  await dash.goto(`chrome-extension://${extId}/dashboard.html#/clean`);
-  await wait(1800);
-  await shot(dash, '08-clean');
-  await dash.goto(`chrome-extension://${extId}/dashboard.html#/tabs`);
-  await wait(1200);
-  await shot(dash, '09-tabs');
-  await dash.goto(`chrome-extension://${extId}/dashboard.html#/search?q=${encodeURIComponent('that paper about semantic entropy I opened last week')}`);
-  await wait(2000);
+  await shot(dash, '05-group-tabs-proposal');
+  await click('Apply Groups');
+  await wait(2500);
+  await go('/', 1500);
+  await shot(dash, '06-tabs-grouped');
+  await dash.bringToFront(); // hover needs a visible tab
+  const row = await dash.$('.tab-row');
+  if (row) {
+    await row.hover();
+    await wait(300);
+    await dash.evaluate(() => document.querySelector('.tab-row .actions button[aria-label="More"]')?.click());
+    await wait(400);
+    await shot(dash, '06b-row-menu');
+    await dash.keyboard.press('Escape');
+  }
+  await go('/?by=window', 1000);
+  await shot(dash, '07-tabs-by-window');
+  const firstGroup = await dash.evaluate(() => document.querySelector('a[href^="#/group/"]')?.getAttribute('href'));
+  if (firstGroup) {
+    await go(firstGroup.slice(1), 1000);
+    await shot(dash, '08-group');
+  }
+  await go('/tidy', 1800);
+  await shot(dash, '09-tidy');
+  await go(`/search?q=${encodeURIComponent('that paper about semantic entropy I opened last week')}`, 2000);
   await shot(dash, '10-search');
-  await dash.goto(`chrome-extension://${extId}/dashboard.html#/settings`);
-  await wait(1000);
-  await shot(dash, '11-settings');
-  await dash.goto(`chrome-extension://${extId}/dashboard.html#/windows`);
-  await wait(1000);
-  await shot(dash, '12-windows');
+  await go('/history', 1000);
+  await shot(dash, '11-history');
+  await go('/settings', 1000);
+  await shot(dash, '12-settings');
   await dash.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
-  await dash.goto(`chrome-extension://${extId}/dashboard.html#/`);
-  await wait(1200);
-  await shot(dash, '13-home-dark');
+  await go('/', 1200);
+  await shot(dash, '13-tabs-dark');
   await dash.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'light' }]);
-  await dash.goto(`chrome-extension://${extId}/dashboard.html#/tabs`);
-  await wait(1000);
+  await go('/', 1000);
   await shot(dash, '14-tabs-narrow', 420, 860);
-  const errs = [];
-  dash.on('pageerror', (e) => errs.push(e.message));
-  dash.on('console', (m) => m.type() === 'error' && errs.push(m.text()));
-  await dash.goto(`chrome-extension://${extId}/dashboard.html#/recovery?tab=snapshots`);
-  await wait(800);
-  await shot(dash, '15-recovery');
   console.log('errors:', JSON.stringify(errs));
 } finally {
   await browser.close();

@@ -29,7 +29,7 @@ All three should pass.
 - **One writer.** UI code reads IndexedDB but sends all mutations to the service worker through `rpc()` (`src/shared/messages.ts`).
 - **Keep logic pure and tested.** Rules, matching and ranking live in `src/core` and `src/ai` without Chrome API calls, so they can be unit tested.
 - **Privacy.** Nothing leaves the device without explicit opt-in. Don't add permissions to the required list if they can be optional.
-- **Fewer, clearer choices in the UI.** Show the one or two actions people need; put the rest behind a menu or "More settings".
+- **Fewer, clearer choices in the UI.** Show the one or two actions people need; put the rest behind a menu or "More settings". Say "group", not "workspace" (users only ever see groups).
 - Match the existing code style: TypeScript strict mode, small modules, comments that explain *why*.
 
 ## Reporting bugs

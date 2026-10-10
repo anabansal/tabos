@@ -16,75 +16,76 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/home-organized.png" alt="TabOS dashboard home with workspaces" width="860">
+  <img src="docs/screenshots/tabs.png" alt="TabOS: all your tabs, sorted into groups" width="860">
 </p>
 
 ## Why
 
 Most people with dozens of tabs open have the same three problems: Chrome uses a lot of memory, the tab strip becomes unreadable, and closing anything feels risky because you might need it later. TabOS fixes all three without asking you to change how you browse:
 
-- **Inactive tabs fall asleep** and give memory back. They stay in your tab strip and reload when clicked.
-- **Tabs are grouped into workspaces** (by hand, from Chrome tab groups, or suggested by AI) that you can switch between.
-- **Nothing is ever lost.** Archiving closes a tab but keeps it, every action has Undo, and sessions survive browser restarts.
+- **Tabs you leave alone fall asleep** and give memory back. They stay in your tab strip and reload when clicked.
+- **Tabs are sorted into groups**, the same groups you see in Chrome's tab strip. One click sorts them for you, or let TabOS keep doing it as you browse.
+- **Nothing is ever lost.** Archive closes a tab but keeps it, everything can be undone, and your tabs survive browser restarts.
 - **You can find anything again**, even with a vague description like *"that paper about semantic entropy I opened last week"*.
 
-Everything runs locally. No account, no server, no tracking.
+Everything runs on your computer. No account, no server, no tracking.
 
-## Features
+## How it works
 
-### Tab management
-
-| | |
-|---|---|
-| **Every tab, every window** | Tracks URL, title, site, created / last-active time, and state (awake, sleeping, archived, closed) across all windows. Incognito is never tracked. |
-| **Workspaces** | Create, rename, recolor, protect, delete (with undo) and switch. New tabs join the workspace of the tab they were opened from. Two-way sync with Chrome tab groups: name a group and it becomes a workspace. |
-| **Automatic sleeping** | Uses Chrome's tab discarding after a configurable idle time. Never touches the visible tab, tabs playing audio, pinned tabs (configurable), protected tabs, protected sites (Meet, Zoom, Slack… by default) or protected workspaces. |
-| **Archiving** | Closes a tab but keeps its title, URL, workspace, window position and tab group so it can be restored exactly. Automatic archiving is off by default; when enabled it always posts a notification with Undo. Archived tabs are never deleted automatically. |
-| **Restore** | Reopen single tabs, whole workspaces (into a grouped window), or full session snapshots. Large restores open asleep, so memory doesn't spike. |
-| **Duplicates** | Finds tabs pointing at the same page (ignoring tracking parameters, `#anchors`, YouTube timestamps). You pick which copy to keep. |
-| **Windows** | See every window at a glance, move tabs between windows or into a new one, merge all windows, and sleep, archive or snapshot a whole window. |
-| **Recovery** | Recently closed tabs, manual and automatic snapshots, the full undo history, and (optional) Chrome's own recently-closed list and browsing history. |
-| **Clean** | One page that shows exactly what will be slept, archived or closed, with reasons, before anything happens. |
-| **Search everywhere** | Popup search-as-you-type, dashboard search, and the address bar: type `tab` then a space. |
-
-### AI organization and search
+TabOS has three places and two buttons.
 
 | | |
 |---|---|
-| **Organize** | Groups tabs into workspaces such as *AI Research*, *Coding*, *College*, *Shopping* and *Startups*, names them and writes a one-line summary. You review, rename, move tabs, skip groups, then apply. One-click undo. |
-| **Auto-organize** (optional) | Turn it on and new tabs sort themselves: a tab that clearly belongs to a workspace joins it (and its Chrome tab group), and once 3 unsorted tabs share a topic TabOS creates that workspace for you. Confident matches only, runs offline, never overrides a choice you made, and every change has Undo. |
-| **Natural-language search** | Understands topic, kind of page ("paper", "video", "repo", "docs"), time ("yesterday", "last week", "3 days ago", "on Monday") and state ("archived", "I closed"). Each result says why it matched. |
-| **Related tabs** | Finds pages about the same thing across different sites. |
-| **Smart archive suggestions** | Scores tabs by inactivity, duplication and workspace activity. Suggestions only; you approve in Clean. |
-| **Replaceable AI layer** | Works fully offline with the built-in model. Optionally connect Ollama (local), any OpenAI-compatible API, or the Anthropic API for embeddings and naming. External providers require explicit consent and never receive page contents. |
+| **Tabs** | Every open tab in every window, sectioned by group (or by window). Hover a tab to archive it; the ⋯ menu moves it to another group, keeps it awake, or finds similar tabs. Drag tabs onto a group in the sidebar. |
+| **Archive** | Tabs you closed but kept. Reopen one, or a whole group, any time. Nothing here is deleted unless you delete it. |
+| **History** | Recently closed tabs, saved sessions (all your windows, restorable in one click), and Undo for anything TabOS did. |
+| **Group Tabs** | Suggests groups such as *AI Research*, *Coding*, *College*, *Shopping* and *Startups*. You can rename, move or skip anything, then apply. Turn on **Group new tabs automatically** and new tabs sort themselves. |
+| **Tidy Up** | One screen: put idle tabs to sleep, archive tabs you seem done with, close duplicate copies. Review exactly which tabs, then one button. |
 
 <p align="center">
-  <img src="docs/screenshots/organize-proposal.png" alt="Organize: review proposed workspaces before applying" width="860">
+  <img src="docs/screenshots/group-tabs.png" alt="Group Tabs: review suggested groups before applying" width="860">
 </p>
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/search.png" alt="Natural-language search results"></td>
-    <td><img src="docs/screenshots/clean.png" alt="Clean page preview"></td>
+    <td><img src="docs/screenshots/tidy-up.png" alt="Tidy Up"></td>
+    <td><img src="docs/screenshots/search.png" alt="Search in your own words"></td>
   </tr>
   <tr>
-    <td align="center">Natural-language search</td>
-    <td align="center">Clean: review before anything changes</td>
+    <td align="center">Tidy Up: three switches, one button</td>
+    <td align="center">Search in your own words</td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/windows.png" alt="Windows view"></td>
-    <td><img src="docs/screenshots/home-dark.png" alt="Dark theme"></td>
+    <td><img src="docs/screenshots/tab-menu.png" alt="Tab menu"></td>
+    <td><img src="docs/screenshots/tabs-dark.png" alt="Dark appearance"></td>
   </tr>
   <tr>
-    <td align="center">Every window at a glance</td>
-    <td align="center">Light and dark themes</td>
+    <td align="center">Everything else lives in one menu</td>
+    <td align="center">Light and dark appearance</td>
   </tr>
 </table>
 
 <p align="center">
-  <img src="docs/screenshots/popup-search.png" alt="Popup quick search" width="380"><br>
-  <sub>Popup: <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd></sub>
+  <img src="docs/screenshots/popup.png" alt="TabOS popup" width="360"><br>
+  <sub>The popup: <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd></sub>
 </p>
+
+### What happens on its own
+
+- Every tab in every Chrome window is tracked (incognito never is).
+- Tabs idle for 45 minutes fall asleep. The tab you're looking at, tabs playing audio, pinned tabs, protected tabs and sites like Google Meet, Zoom and Slack never do.
+- A new tab joins the group of the tab it was opened from.
+- Naming a tab group in Chrome creates the matching group in TabOS, and renames flow both ways.
+- Your windows are saved every 30 minutes for crash recovery.
+- Optional: **Group new tabs automatically** (confident matches only; a new group appears once 3 tabs share a topic) and **Archive tabs I haven't used in a while** (always with a notification and Undo).
+
+### More features
+
+- **Windows:** switch Tabs to *Windows* to see each window, merge them, or archive or save one as a session. Move tabs between windows from the ⋯ menu.
+- **Search everywhere:** the popup, the dashboard toolbar, and the address bar (type `tab` then a space).
+- **Similar tabs:** finds pages about the same thing across different sites.
+- **Duplicates:** the same page open twice (ignoring tracking parameters and `#anchors`) is offered for closing in Tidy Up.
+- **Private AI by default:** grouping, search and similar tabs run offline. You can optionally connect Ollama (on your computer), any OpenAI-compatible API, or the Anthropic API. Anything that would leave your device needs your explicit consent and never includes page contents.
 
 ## Install
 
@@ -99,7 +100,7 @@ TabOS isn't on the Chrome Web Store yet. Install it from source in about a minut
    npm run build
    ```
 3. Open `chrome://extensions`, turn on **Developer mode** (top right), click **Load unpacked**, and choose the `dist` folder.
-4. Pin TabOS to the toolbar. The dashboard opens with a short welcome.
+4. Pin TabOS to the toolbar. TabOS opens with a short welcome and a **Group Tabs** button.
 
 Works in Chrome 120+ and should work in other Chromium browsers (Edge, Brave, Arc), though those are not tested yet.
 
@@ -108,12 +109,11 @@ Works in Chrome 120+ and should work in other Chromium browsers (Edge, Brave, Ar
 | Do this | How |
 |---|---|
 | Find a tab | Click the toolbar icon (or <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd>) and type. Or type `tab` + space in the address bar. |
-| Free memory | Nothing to do: idle tabs sleep after 45 minutes. For more, press **Clean**. |
-| Sort tabs into workspaces | Dashboard → **Organize** → review → **Apply**. Or turn on **Sort new tabs automatically** (Settings) and let TabOS do it as you browse. |
-| Switch workspace | Click a workspace in the popup, or **Switch** on its card. |
-| Keep a tab alive | Tab menu → **Protect**, or add the site under Settings → Protected sites. |
-| Get something back | Dashboard → **Recovery**, or press **Undo** on any notification or activity entry. |
-| Open the dashboard | <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd> |
+| Sort your tabs | **Group Tabs** → **Suggest Groups** → **Apply Groups**. |
+| Free memory | Nothing to do: idle tabs sleep on their own. For more, press **Tidy Up**. |
+| Jump to a group | Click it in the popup, or **Show in Chrome** on its page. |
+| Keep a tab awake | ⋯ → **Keep open (protect)**. |
+| Get something back | **Archive** or **History**, or press **Undo** on any message. |
 
 Shortcuts can be changed at `chrome://extensions/shortcuts`.
 
@@ -124,7 +124,7 @@ TabOS asks only for what it needs and explains the rest when you turn a feature 
 | Permission | Why |
 |---|---|
 | `tabs`, `tabGroups` | Read tab titles and URLs and manage tabs and groups. This is the core of the extension. |
-| `storage`, `unlimitedStorage` | Keep tab records, workspaces and snapshots in local IndexedDB. |
+| `storage`, `unlimitedStorage` | Keep tab records, groups and saved sessions in local IndexedDB. |
 | `alarms` | Check for idle tabs every minute and take periodic snapshots. |
 | `notifications` | Only to announce automatic archiving with an Undo button. |
 | `favicon` | Show site icons for archived and closed tabs from Chrome's local cache. |
@@ -157,7 +157,7 @@ ollama pull nomic-embed-text
 ollama pull llama3.2
 ```
 
-Then pick Ollama in Settings → More settings → AI → Connect a provider, and press **Save and test**.
+Then open Settings → More settings → AI → **Use another AI service**, pick Ollama, and press **Save and test**.
 
 Only tab titles, URLs and (if enabled) meta descriptions are ever sent to a provider, never page contents. Excluded sites are never sent. API keys are stored only on your device and are left out of exports.
 
@@ -173,7 +173,7 @@ npm run screenshots  # regenerate docs/screenshots from a scripted walkthrough
 npm run demo         # open a separate Chrome window with TabOS and sample tabs to try it
 ```
 
-The end-to-end suite downloads Chrome for Testing on first run (`npx puppeteer browsers install chrome`) and loads the built extension. It covers tracking, sleeping and protection, archive and undo, restore, duplicates, two-way tab-group sync, workspace inheritance, snapshots, moving and merging windows, Clean, auto-organize, and a full browser restart.
+The end-to-end suite downloads Chrome for Testing on first run (`npx puppeteer browsers install chrome`) and loads the built extension. It covers tracking, sleeping and protection, archive and undo, restore, duplicates, two-way tab-group sync, group inheritance, saved sessions, moving and merging windows, Tidy Up, automatic grouping, and a full browser restart.
 
 ### Project layout
 
@@ -196,7 +196,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the pieces fit together
 
 ## Status
 
-**Implemented:** everything in the feature tables above, the popup, the dashboard, settings, export and import, and both test suites.
+**Implemented:** everything described above, the popup, the dashboard, settings, export and import, and both test suites.
 
 **Known limitations**
 

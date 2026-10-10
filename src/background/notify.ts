@@ -9,7 +9,7 @@ export async function notifyAutoArchive(activityId: string, count: number): Prom
       type: 'basic',
       iconUrl: chrome.runtime.getURL('icons/icon-128.png'),
       title: `TabOS archived ${count} inactive ${count === 1 ? 'tab' : 'tabs'}`,
-      message: 'They are saved under Archived and can be restored at any time.',
+      message: 'They wait in Archive and can be reopened any time.',
       buttons: [{ title: 'Undo' }, { title: 'Review' }],
       priority: 0,
     });
@@ -23,8 +23,8 @@ export async function notifyAutoSort(activityId: string, workspaceNames: string[
     await chrome.notifications.create(SORT_PREFIX + activityId, {
       type: 'basic',
       iconUrl: chrome.runtime.getURL('icons/icon-128.png'),
-      title: `New workspace${workspaceNames.length > 1 ? 's' : ''}: ${workspaceNames.join(', ')}`,
-      message: `TabOS sorted ${count} ${count === 1 ? 'tab' : 'tabs'} and grouped them for you.`,
+      title: `New group${workspaceNames.length > 1 ? 's' : ''}: ${workspaceNames.join(', ')}`,
+      message: `TabOS grouped ${count} ${count === 1 ? 'tab' : 'tabs'} for you.`,
       buttons: [{ title: 'Undo' }, { title: 'Review' }],
       priority: 0,
     });

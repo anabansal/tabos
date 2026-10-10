@@ -19,7 +19,6 @@ const EXAMPLES = ['that paper about semantic entropy I opened last week', 'react
 export function SearchView({ query }: { query: string }) {
   const { records, settings, wsMap } = useData();
   const fb = useFeedback();
-  const [text, setText] = useState(query);
   const [includeHistory, setIncludeHistory] = useState(false);
   const [historyGranted] = usePermission({ permissions: ['history'] });
   const [result, setResult] = useState<SemanticResult<Doc> | null>(null);
@@ -30,7 +29,6 @@ export function SearchView({ query }: { query: string }) {
   const providers = useMemo(() => resolveProviders(settings.ai), [settings.ai]);
   const abort = useRef<AbortController | null>(null);
 
-  useEffect(() => setText(query), [query]);
 
   useEffect(() => {
     if (!query.trim()) {
@@ -82,39 +80,9 @@ export function SearchView({ query }: { query: string }) {
       <div className="page-head">
         <div>
           <h1>Search</h1>
-          <div className="sub">Describe what you remember: topic, kind of page, when you saw it. Covers open, sleeping, archived and recently closed tabs.</div>
+          <div className="subtitle">Results for your search across open, archived and recently closed tabs. Try describing it: what it was about, what kind of page, and when.</div>
         </div>
       </div>
-      <form
-        className="search-field"
-        onSubmit={(e) => {
-          e.preventDefault();
-          navigate(`/search?q=${encodeURIComponent(text)}`);
-        }}
-      >
-        <SearchIcon />
-        <input
-          className="input"
-          autoFocus
-          style={{ height: 40, fontSize: 14 }}
-          placeholder="e.g. that paper about semantic entropy I opened last week"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          aria-label="Search query"
-          onKeyDown={(e) => {
-            if (e.key === 'ArrowDown') {
-              e.preventDefault();
-              setActive((a) => Math.min(hits.length - 1, a + 1));
-            } else if (e.key === 'ArrowUp') {
-              e.preventDefault();
-              setActive((a) => Math.max(0, a - 1));
-            } else if (e.key === 'Enter' && text === query && hits[active]) {
-              e.preventDefault();
-              open(hits[active].doc);
-            }
-          }}
-        />
-      </form>
       <div className="filters">
         <span className="faint row" style={{ gap: 6 }}>
           <Sparkles style={{ width: 14, height: 14 }} /> {providers.embedding.label}

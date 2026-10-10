@@ -62,4 +62,4 @@ export function bytes(n: number): string {
 
 export const plural = (n: number, w: string, p = w + 's') => `${n} ${n === 1 ? w : p}`;
 
-export const STATUS_LABEL = { open: 'Awake', sleeping: 'Sleeping', archived: 'Archived', closed: 'Closed' } as const;
+export const STATUS_LABEL = { open: 'Open', sleeping: 'Sleeping', archived: 'Archived', closed: 'Closed' } as const;

@@ -1,13 +1,14 @@
-import { Archive, Brush, LayoutDashboard, MoreHorizontal, Moon, Plus, Search, Shield, ShieldOff, Sparkles, CornerDownLeft } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Archive, ChevronDown, CornerDownLeft, Maximize2, Search, Sparkles, Wand2, Inbox } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { indexDoc, quickSearch } from '../core/search';
 import { rpc } from '../shared/messages';
 import type { TabRecord } from '../shared/types';
 import { displayUrl } from '../shared/url';
-import { Favicon, Menu, StatusPill, WorkspaceSelect, WsDot } from '../ui/components';
+import { Favicon, Menu, StatusPill, WsDot } from '../ui/components';
 import { useFeedback } from '../ui/feedback';
 import { plural } from '../ui/format';
 import { useRecords, useSettings, useTheme, useWorkspaces } from '../ui/hooks';
+import { useGroupActions } from '../ui/TabList';
 
 const isLive = (r: TabRecord) => r.status === 'open' || r.status === 'sleeping';
 
@@ -22,32 +23,32 @@ export function Popup() {
   const [settings] = useSettings();
   useTheme(settings);
   const fb = useFeedback();
+  const ga = useGroupActions();
   const [q, setQ] = useState('');
   const [active, setActive] = useState(0);
-  const [current, setCurrent] = useState<TabRecord | null>(null);
-  const [sleepable, setSleepable] = useState<number | null>(null);
-  const [newWs, setNewWs] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [currentId, setCurrentId] = useState<string | null>(null);
+  const [tidy, setTidy] = useState<number | null>(null);
 
   useEffect(() => {
-    rpc('tabs.current', {}).then(setCurrent).catch(() => setCurrent(null));
+    rpc('tabs.current', {}).then((r) => setCurrentId(r?.id ?? null)).catch(() => setCurrentId(null));
     rpc('clean.preview', {})
-      .then((p) => setSleepable(p.sleep.length + p.archive.length + p.duplicates.reduce((n, g) => n + g.recordIds.length - 1, 0)))
-      .catch(() => setSleepable(null));
+      .then((p) => setTidy(p.sleep.length + p.archive.length + p.duplicates.reduce((n, g) => n + g.recordIds.length - 1, 0)))
+      .catch(() => setTidy(null));
   }, []);
-  // Keep the current-tab card in sync with live updates.
-  const cur = current ? (records?.find((r) => r.id === current.id) ?? current) : null;
+  const cur = currentId ? records?.find((r) => r.id === currentId) : undefined;
+  const groups = workspaces ?? [];
+  const curGroup = cur?.workspaceId ? groups.find((g) => g.id === cur.workspaceId) : undefined;
 
   const index = useMemo(() => (records ?? []).map(indexDoc), [records]);
   const hits = useMemo(() => (q.trim() ? quickSearch(index, q, 8) : []), [index, q]);
   useEffect(() => setActive(0), [q]);
-
   const counts = useMemo(() => {
-    const c = { open: 0, sleeping: 0, byWs: new Map<string, number>() };
+    const c = { live: 0, other: 0, byWs: new Map<string, number>() };
     for (const r of records ?? []) {
-      if (r.status === 'open') c.open++;
-      if (r.status === 'sleeping') c.sleeping++;
-      if (isLive(r) && r.workspaceId) c.byWs.set(r.workspaceId, (c.byWs.get(r.workspaceId) ?? 0) + 1);
+      if (!isLive(r)) continue;
+      c.live++;
+      if (r.workspaceId) c.byWs.set(r.workspaceId, (c.byWs.get(r.workspaceId) ?? 0) + 1);
+      else c.other++;
     }
     return c;
   }, [records]);
@@ -61,7 +62,7 @@ export function Popup() {
     }
   };
   const onKey = (e: React.KeyboardEvent) => {
-    const total = hits.length + 1; // last row = natural-language search
+    const total = hits.length + 1;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setActive((a) => (a + 1) % total);
@@ -78,38 +79,33 @@ export function Popup() {
     }
   };
 
-  const ws = workspaces ?? [];
   return (
     <div className="popup-root">
       <header className="popup-head">
         <img src="/icons/icon-32.png" alt="" width={18} height={18} />
         <strong>TabOS</strong>
-        <span className="faint tnum">
-          {counts.open} open · {counts.sleeping} asleep
-        </span>
+        <span className="faint tnum">{plural(counts.live, 'tab')}</span>
         <div className="spacer" />
-        <button className="btn ghost icon sm" title="Open dashboard" aria-label="Open dashboard" onClick={() => openDashboard()}>
-          <LayoutDashboard />
+        <button className="btn ghost icon sm" title="Open TabOS" aria-label="Open TabOS" onClick={() => openDashboard()}>
+          <Maximize2 />
         </button>
       </header>
 
-      <div className="search-field" style={{ margin: '0 12px' }}>
+      <div className="search-field" style={{ margin: '0 14px' }}>
         <Search />
-        <input ref={inputRef} className="input" autoFocus placeholder="Search all tabs" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onKey} aria-label="Search tabs" />
+        <input className="input" autoFocus placeholder="Search tabs" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onKey} aria-label="Search tabs" />
       </div>
 
       {q.trim() ? (
-        <div className="popup-results" role="listbox">
+        <div className="popup-scroll" role="listbox">
           {hits.map((h, i) => (
             <div key={h.doc.id} role="option" aria-selected={i === active} className={`result-row ${i === active ? 'active' : ''}`} onMouseEnter={() => setActive(i)} onClick={() => openHit(h.doc)}>
               <Favicon url={h.doc.url} />
-              <div className="col" style={{ gap: 0 }}>
-                <span className="ellipsis">{h.doc.title}</span>
-                <span className="faint ellipsis" style={{ fontSize: 11.5 }}>
-                  {displayUrl(h.doc.url)}
-                </span>
+              <div style={{ minWidth: 0 }}>
+                <div className="ellipsis">{h.doc.title}</div>
+                <div className="faint ellipsis small">{h.doc.domain || displayUrl(h.doc.url)}</div>
               </div>
-              {h.doc.status !== 'open' && <StatusPill status={h.doc.status} />}
+              {h.doc.status !== 'open' && h.doc.status !== 'sleeping' && <StatusPill status={h.doc.status} />}
             </div>
           ))}
           <div
@@ -120,96 +116,64 @@ export function Popup() {
             onClick={() => openDashboard(`/search?q=${encodeURIComponent(q)}`)}
           >
             <Sparkles style={{ width: 16, height: 16, color: 'var(--accent)' }} />
-            <span className="ellipsis">
-              {hits.length ? 'Search in plain language' : 'No exact matches. Search in plain language'}
-            </span>
+            <span className="ellipsis">{hits.length ? 'Search in your own words' : 'No exact match. Search in your own words'}</span>
             <CornerDownLeft style={{ width: 14, height: 14, color: 'var(--text-3)' }} />
           </div>
         </div>
       ) : (
         <>
           {cur && isLive(cur) && (
-            <section className="popup-current">
-              <div className="row">
+            <section className="grouped popup-inset">
+              <div className="item">
                 <Favicon url={cur.url} />
-                <span className="ellipsis grow" style={{ fontWeight: 550 }} title={cur.title}>
-                  {cur.title}
-                </span>
-                {cur.isProtected && <Shield style={{ width: 13, height: 13, color: 'var(--accent)' }} aria-label="Protected" />}
-              </div>
-              <div className="row">
-                <WorkspaceSelect
-                  className="select grow"
-                  value={cur.workspaceId}
-                  workspaces={ws}
-                  noneLabel="No workspace"
-                  onChange={(id) => fb.run(() => rpc('tabs.assign', { recordIds: [cur.id], workspaceId: id }), () => (id ? 'Moved' : 'Removed from workspace'))}
-                />
-                <button className="btn" onClick={() => fb.run(() => rpc('tabs.archive', { recordIds: [cur.id] }), () => 'Archived')}>
-                  <Archive /> Archive
+                <div className="grow" style={{ minWidth: 0 }}>
+                  <div className="ellipsis" style={{ fontWeight: 500 }} title={cur.title}>
+                    {cur.title}
+                  </div>
+                  <Menu
+                    align="left"
+                    trigger={(t) => (
+                      <button className="group-chip" onClick={t} aria-label="Change group">
+                        {curGroup ? <WsDot color={curGroup.color} size={8} /> : null}
+                        {curGroup ? curGroup.name : 'Add to a group'}
+                        <ChevronDown style={{ width: 12, height: 12 }} />
+                      </button>
+                    )}
+                    items={ga.menuItems([cur.id], groups, cur.workspaceId)}
+                  />
+                </div>
+                <button className="btn ghost icon" title="Archive: close it but keep it" aria-label="Archive this tab" onClick={() => fb.run(() => rpc('tabs.archive', { recordIds: [cur.id] }), () => 'Archived')}>
+                  <Archive />
                 </button>
-                <Menu
-                  trigger={(t) => (
-                    <button className="btn icon" aria-label="More" onClick={t}>
-                      <MoreHorizontal />
-                    </button>
-                  )}
-                  items={[
-                    {
-                      label: cur.isProtected ? 'Unprotect this tab' : 'Protect this tab',
-                      icon: cur.isProtected ? ShieldOff : Shield,
-                      onClick: () => fb.run(() => rpc('tabs.protect', { recordIds: [cur.id], value: !cur.isProtected }), () => (cur.isProtected ? 'Unprotected' : 'Protected')),
-                    },
-                    { label: 'Sleep other tabs in this window', icon: Moon, onClick: () => fb.run(() => rpc('tabs.sleepOthers', {}), (r) => `Put ${plural(r.count, 'tab')} to sleep`) },
-                  ]}
-                />
               </div>
             </section>
           )}
 
-          <section className="popup-section">
-            <div className="row" style={{ padding: '0 12px 4px' }}>
-              <span className="section-title">Workspaces</span>
-              <div className="spacer" />
-              <button className="btn ghost icon sm" aria-label="New workspace" title="New workspace" onClick={() => setNewWs('')}>
-                <Plus />
-              </button>
-            </div>
-            {newWs !== null && (
-              <form
-                style={{ padding: '0 12px 6px' }}
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  if (!newWs.trim()) return setNewWs(null);
-                  try {
-                    await rpc('workspaces.create', { name: newWs, recordIds: cur && isLive(cur) && !cur.workspaceId ? [cur.id] : [] });
-                    setNewWs(null);
-                  } catch (err) {
-                    fb.error(err);
-                  }
-                }}
-              >
-                <input className="input" style={{ width: '100%' }} autoFocus placeholder="Name, then Enter" value={newWs} onChange={(e) => setNewWs(e.target.value)} onBlur={() => !newWs.trim() && setNewWs(null)} />
-              </form>
-            )}
-            <div className="popup-ws">
-              {ws.map((w) => (
-                <button key={w.id} className="popup-ws-row" onClick={() => fb.run(() => rpc('workspaces.switch', { id: w.id }), () => `Switched to ${w.name}`).then(() => window.close())}>
-                  <WsDot color={w.color} />
-                  <span className="ellipsis grow">{w.name}</span>
-                  <span className="faint tnum">{counts.byWs.get(w.id) ?? 0}</span>
+          <section className="popup-scroll">
+            <div className="popup-label">Groups</div>
+            <div className="grouped popup-inset">
+              {groups.map((g) => (
+                <button key={g.id} className="item popup-row" onClick={() => fb.run(() => rpc('workspaces.switch', { id: g.id }), () => `Showing ${g.name}`).then(() => window.close())}>
+                  <WsDot color={g.color} />
+                  <span className="ellipsis grow">{g.name}</span>
+                  <span className="faint tnum">{counts.byWs.get(g.id) ?? 0}</span>
                 </button>
               ))}
-              {!ws.length && newWs === null && <div className="faint" style={{ padding: '4px 12px 8px' }}>No workspaces yet. Name a Chrome tab group, add one here, or let Organize suggest some.</div>}
+              <button className="item popup-row" onClick={() => openDashboard('/?group=none')}>
+                <Inbox style={{ width: 14, height: 14, color: 'var(--text-3)' }} />
+                <span className="ellipsis grow">Other tabs</span>
+                <span className="faint tnum">{counts.other}</span>
+              </button>
             </div>
+            {!groups.length && <div className="faint small" style={{ padding: '8px 18px 0' }}>No groups yet. Group Tabs sorts them for you in one click.</div>}
           </section>
 
           <footer className="popup-foot">
-            <button className="btn primary grow" onClick={() => openDashboard('/clean')}>
-              <Brush /> {sleepable ? `Clean up ${plural(sleepable, 'tab')}` : 'Clean up'}
+            <button className="btn primary grow" onClick={() => openDashboard('/tidy')}>
+              <Sparkles /> {tidy ? `Tidy Up ${plural(tidy, 'Tab')}` : 'Tidy Up'}
             </button>
-            <button className="btn" onClick={() => openDashboard('/organize')}>
-              <Sparkles /> Organize
+            <button className="btn grow" onClick={() => openDashboard('/group-tabs')}>
+              <Wand2 /> Group Tabs
             </button>
           </footer>
         </>

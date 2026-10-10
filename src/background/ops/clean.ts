@@ -74,7 +74,7 @@ export async function executeClean(req: { sleep: string[]; archive: string[]; cl
     archived?.count ? `archived ${archived.count}` : '',
     closed?.count ? `closed ${plural(closed.count, 'duplicate')}` : '',
   ].filter(Boolean);
-  const result = await finish('clean', () => `Clean: ${labelParts.join(', ')}`, {
+  const result = await finish('clean', () => `Tidy Up: ${labelParts.join(', ')}`, {
     count,
     skipped: outcomes.flatMap((o) => o.skipped),
     undo: parts.length ? { type: 'composite', parts } : null,

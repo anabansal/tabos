@@ -6,7 +6,11 @@ TabOS is a Manifest V3 extension built with Vite, React 18 and TypeScript. One b
 |---|---|
 | `background.js` | Module service worker. The single writer of all state. |
 | `popup.html` | Toolbar popup: quick search, current tab, workspaces. |
-| `dashboard.html` | Full dashboard. Hash-routed views (`#/tabs`, `#/organize`, `#/clean`, …). |
+| `dashboard.html` | Full dashboard. Hash-routed views: Tabs (`#/`), Archive, History, a group (`#/group/:id`), Group Tabs, Tidy Up, Search, Settings. |
+
+## Naming
+
+Users only ever see **groups**. In code a group is a `Workspace` record, linked to one Chrome tab group per window. *Tidy Up* is the `clean.*` RPCs, *Group Tabs* is `organize.*`, and saved sessions are `snapshots`.
 
 ## Data
 

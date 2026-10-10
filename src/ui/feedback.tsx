@@ -21,7 +21,16 @@ interface ConfirmOptions {
   danger?: boolean;
 }
 
+interface PromptOptions {
+  title: string;
+  placeholder?: string;
+  initial?: string;
+  confirmLabel?: string;
+}
+
 interface FeedbackApi {
+  /** Ask for one line of text (e.g. a new group name). Resolves null when cancelled. */
+  prompt(opts: PromptOptions): Promise<string | null>;
   toast(message: string, opts?: { activityId?: string | null; kind?: 'info' | 'error' }): void;
   error(err: unknown): void;
   confirm(opts: ConfirmOptions): Promise<boolean>;
@@ -52,6 +61,8 @@ function skippedSummary(r: OpResult): string {
 export function FeedbackProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [dialog, setDialog] = useState<(ConfirmOptions & { resolve: (v: boolean) => void }) | null>(null);
+  const [ask, setAsk] = useState<(PromptOptions & { resolve: (v: string | null) => void }) | null>(null);
+  const prompt = useCallback((opts: PromptOptions) => new Promise<string | null>((resolve) => setAsk({ ...opts, resolve })), []);
   const seq = useRef(0);
 
   const dismiss = useCallback((id: number) => setToasts((t) => t.filter((x) => x.id !== id)), []);
@@ -97,9 +108,18 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <Ctx.Provider value={{ toast, error, confirm, run }}>
+    <Ctx.Provider value={{ toast, error, confirm, run, prompt }}>
       {children}
       {dialog && <ConfirmDialog opts={dialog} onClose={close} />}
+      {ask && (
+        <PromptDialog
+          opts={ask}
+          onClose={(v) => {
+            ask.resolve(v);
+            setAsk(null);
+          }}
+        />
+      )}
       <div className="toasts" role="status" aria-live="polite">
         {toasts.map((t) => (
           <div key={t.id} className={`toast ${t.kind === 'error' ? 'error' : ''}`}>
@@ -158,6 +178,44 @@ function ConfirmDialog({ opts, onClose }: { opts: ConfirmOptions; onClose: (v: b
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function PromptDialog({ opts, onClose }: { opts: PromptOptions; onClose: (v: string | null) => void }) {
+  const [value, setValue] = useState(opts.initial ?? '');
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose(null);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return (
+    <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose(null)}>
+      <form
+        className="dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="prompt-title"
+        onSubmit={(e) => {
+          e.preventDefault();
+          onClose(value.trim() || null);
+        }}
+      >
+        <div className="dialog-head">
+          <h2 id="prompt-title">{opts.title}</h2>
+        </div>
+        <div className="dialog-body">
+          <input className="input" style={{ width: '100%', height: 34 }} autoFocus placeholder={opts.placeholder} value={value} onChange={(e) => setValue(e.target.value)} />
+        </div>
+        <div className="dialog-foot">
+          <button type="button" className="btn" onClick={() => onClose(null)}>
+            Cancel
+          </button>
+          <button type="submit" className="btn primary" disabled={!value.trim()}>
+            {opts.confirmLabel ?? 'OK'}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

@@ -70,7 +70,7 @@ export const handlers: Handlers = {
     const name = await wsName(workspaceId);
     return finish(
       'assign',
-      (n) => (name ? `Moved ${plural(n, 'tab')} to ${name}` : `Removed ${plural(n, 'tab')} from their workspace`),
+      (n) => (name ? `Moved ${plural(n, 'tab')} to ${name}` : `Removed ${plural(n, 'tab')} from their group`),
       await assignRecords(recordIds, workspaceId),
     );
   },
@@ -87,13 +87,13 @@ export const handlers: Handlers = {
 
   'workspaces.create': async (req) => {
     const ws = await createWorkspace(req);
-    await logActivity('workspace', `Created workspace ${ws.name}`, 1, null);
+    await logActivity('workspace', `Created group ${ws.name}`, 1, null);
     return ws;
   },
   'workspaces.update': async ({ id, patch }) => updateWorkspace(id, patch),
   'workspaces.delete': async ({ id }) => {
     const name = await wsName(id);
-    return finish('workspace', () => `Deleted workspace ${name}`, await deleteWorkspace(id));
+    return finish('workspace', () => `Deleted group ${name}`, await deleteWorkspace(id));
   },
   'workspaces.switch': async ({ id }) => toResult(await switchWorkspace(id)),
   'workspaces.group': async ({ id }) => toResult(await groupWorkspace(id)),
@@ -112,17 +112,17 @@ export const handlers: Handlers = {
   'snapshots.create': async ({ name, scope }) => {
     const snap = await createSnapshot(scope, name, 'manual');
     if (!snap) throw new Error('Nothing to save');
-    await logActivity('snapshot', `Saved snapshot ${snap.name}`, snap.tabCount, null);
+    await logActivity('snapshot', `Saved session ${snap.name}`, snap.tabCount, null);
     return snap;
   },
   'snapshots.restore': async ({ id, target, lazy }) => {
     const snap = await db.snapshots.get(id);
-    return finish('snapshot', (n) => `Restored ${plural(n, 'tab')} from ${snap?.name ?? 'snapshot'}`, await restoreSnapshot(id, target, lazy));
+    return finish('snapshot', (n) => `Restored ${plural(n, 'tab')} from ${snap?.name ?? 'session'}`, await restoreSnapshot(id, target, lazy));
   },
   'snapshots.rename': async ({ id, name }) => toResult(await renameSnapshot(id, name)),
   'snapshots.delete': async ({ id }) => {
     const snap = await db.snapshots.get(id);
-    return finish('snapshot', () => `Deleted snapshot ${snap?.name ?? ''}`, await deleteSnapshot(id));
+    return finish('snapshot', () => `Deleted session ${snap?.name ?? ''}`, await deleteSnapshot(id));
   },
   'sessions.restore': async ({ sessionId }) => {
     if (!chrome.sessions) throw new Error('Recently closed access is not enabled. Grant it in Settings → Permissions.');
@@ -143,7 +143,7 @@ export const handlers: Handlers = {
 
   'organize.apply': async (req) => {
     const groups = req.groups.filter((g) => g.recordIds.length).length;
-    return finish('organize', (n) => `Organized ${plural(n, 'tab')} into ${plural(groups, 'workspace')}`, await applyOrganization(req));
+    return finish('organize', (n) => `Grouped ${plural(n, 'tab')} into ${plural(groups, 'group')}`, await applyOrganization(req));
   },
 
   'data.export': async () => exportData(),

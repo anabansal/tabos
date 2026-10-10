@@ -16,7 +16,7 @@ import { session } from '../session';
 import { assignRecords, focusTab, openRecords, sleepRecords } from './tabs';
 
 export async function createWorkspace(input: { name: string; color?: GroupColor; recordIds?: string[] }): Promise<Workspace> {
-  if (!input.name.trim()) throw new Error('Workspace name is required');
+  if (!input.name.trim()) throw new Error('Give the group a name');
   const ws = await createWorkspaceRecord({ name: input.name, color: input.color, source: 'manual' });
   if (input.recordIds?.length) await assignRecords(input.recordIds, ws.id);
   return ws;
@@ -27,13 +27,13 @@ export async function updateWorkspace(
   patch: Partial<Pick<Workspace, 'name' | 'color' | 'summary' | 'isProtected'>>,
 ): Promise<Workspace> {
   const ws = await db.workspaces.get(id);
-  if (!ws) throw new Error('Workspace not found');
+  if (!ws) throw new Error('That group no longer exists');
   const next: Workspace = { ...ws, updatedAt: Date.now() };
   if (patch.name !== undefined) {
     const name = patch.name.trim();
-    if (!name) throw new Error('Workspace name is required');
+    if (!name) throw new Error('Give the group a name');
     const clash = await findWorkspaceByName(name);
-    if (clash && clash.id !== id) throw new Error(`A workspace named "${clash.name}" already exists`);
+    if (clash && clash.id !== id) throw new Error(`There is already a group called “${clash.name}”`);
     next.name = name.slice(0, 60);
   }
   if (patch.color !== undefined) next.color = patch.color;
@@ -46,7 +46,7 @@ export async function updateWorkspace(
 
 export async function deleteWorkspace(id: string): Promise<Outcome> {
   const ws = await db.workspaces.get(id);
-  if (!ws) throw new Error('Workspace not found');
+  if (!ws) throw new Error('That group no longer exists');
   const recs = await db.tabs.where('workspaceId').equals(id).toArray();
   const hadChromeGroups = (await session.groupsForWorkspace(id)).length > 0;
   // Ungroup first so tab-group sync can't resurrect the workspace from its group title.
@@ -69,7 +69,7 @@ export async function deleteWorkspace(id: string): Promise<Outcome> {
  */
 export async function switchWorkspace(id: string): Promise<Outcome> {
   const ws = await db.workspaces.get(id);
-  if (!ws) throw new Error('Workspace not found');
+  if (!ws) throw new Error('That group no longer exists');
   const settings = await getSettings();
   const now = Date.now();
   const members = await db.tabs.where('workspaceId').equals(id).toArray();

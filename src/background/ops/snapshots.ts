@@ -29,7 +29,7 @@ export async function createSnapshot(scope: SnapshotScope, name?: string, kind: 
 
   if (scope.kind === 'workspace') {
     const ws = workspaces.get(scope.workspaceId);
-    if (!ws) throw new Error('Workspace not found');
+    if (!ws) throw new Error('That group no longer exists');
     snapKind = 'workspace';
     defaultName = `${ws.name} · ${stamp(now)}`;
     const members = records
@@ -141,7 +141,7 @@ async function ensureSnapshotWorkspaces(snap: Snapshot): Promise<Map<string, str
 
 export async function restoreSnapshot(id: string, target: 'new-window' | 'current', lazyOpt?: boolean): Promise<Outcome> {
   const snap = await db.snapshots.get(id);
-  if (!snap) throw new Error('Snapshot not found');
+  if (!snap) throw new Error('That session no longer exists');
   const settings = await getSettings();
   const lazy = lazyOpt ?? settings.restore.lazy;
   const now = Date.now();
@@ -223,7 +223,7 @@ export async function renameSnapshot(id: string, name: string): Promise<Outcome>
 
 export async function deleteSnapshot(id: string): Promise<Outcome> {
   const snap = await db.snapshots.get(id);
-  if (!snap) throw new Error('Snapshot not found');
+  if (!snap) throw new Error('That session no longer exists');
   await db.snapshots.delete(id);
   return { count: 1, skipped: [], undo: { type: 'snapshot-restore', snapshot: snap } };
 }

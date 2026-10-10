@@ -34,18 +34,18 @@ export function SettingsView() {
       <div className="page-head">
         <div>
           <h1>Settings</h1>
-          <div className="sub">The defaults work well for most people. Saved automatically.</div>
+          <div className="subtitle">The defaults work well for most people. Saved automatically.</div>
         </div>
       </div>
 
       <section className="card" style={{ maxWidth: 780 }}>
         <Setting
-          title="Sort new tabs into workspaces automatically"
-          desc="New tabs join the workspace they clearly belong to, and TabOS creates a workspace (with a Chrome tab group) when 3 or more unsorted tabs share a topic. Runs offline. Every change can be undone."
+          title="Group new tabs automatically"
+          desc="New tabs join the group they clearly belong to, and a new group appears once 3 tabs share a topic. Runs privately on this computer. You can undo any change."
         >
           <Toggle checked={s.workspaces.autoOrganize} onChange={(v) => save({ workspaces: { autoOrganize: v } })} label="Auto-organize" />
         </Setting>
-        <Setting title="Put inactive tabs to sleep" desc="Frees memory. Tabs stay in your tab strip and reload when clicked. Tabs playing audio, visible, or protected never sleep.">
+        <Setting title="Put idle tabs to sleep" desc="Frees memory. Tabs stay in your tab strip and reload when clicked. Tabs playing audio, visible, or protected never sleep.">
           <div className="row">
             {s.sleep.enabled && (
               <select className="select" value={s.sleep.afterMinutes} onChange={(e) => save({ sleep: { afterMinutes: Number(e.target.value) } })} aria-label="Sleep after">
@@ -60,8 +60,8 @@ export function SettingsView() {
           </div>
         </Setting>
         <Setting
-          title="Archive tabs I haven't used in a while"
-          desc="Closes long-unused tabs and keeps them under Archived. You get a notification with Undo each time. Off by default; the Clean page always asks first."
+          title="Archive tabs I haven’t used in a while"
+          desc="Closes long-unused tabs and keeps them under Archived. You get a notification with Undo each time. Off by default; Tidy Up always asks first."
         >
           <div className="row">
             {s.archive.mode === 'auto' && (
@@ -76,9 +76,7 @@ export function SettingsView() {
             <Toggle checked={s.archive.mode === 'auto'} onChange={(v) => save({ archive: { mode: v ? 'auto' : 'off' } })} label="Auto-archive" />
           </div>
         </Setting>
-        <Setting title="Protected sites" desc="Never slept or archived automatically. Subdomains included." stack>
-          <ListEditor values={s.protectedDomains} placeholder="example.com" onChange={(v) => save({ protectedDomains: v })} />
-        </Setting>
+        <ProtectedSites values={s.protectedDomains} onChange={(v) => save({ protectedDomains: v })} />
       </section>
 
       {!more ? (
@@ -87,11 +85,11 @@ export function SettingsView() {
         </button>
       ) : (
         <>
-          <Group title="Workspaces">
-            <Setting title="New tabs join the current workspace" desc="A tab opened from a workspace tab (or in its window) joins that workspace.">
+          <Group title="Groups">
+            <Setting title="New tabs join the group they were opened from" desc="Open a link from a tab in “Coding” and the new tab is in “Coding” too.">
               <Toggle checked={s.workspaces.autoAssignNewTabs} onChange={(v) => save({ workspaces: { autoAssignNewTabs: v } })} label="Auto-assign" />
             </Setting>
-            <Setting title="Sync with Chrome tab groups" desc="Naming a tab group creates or joins the workspace with that name, and renames flow both ways.">
+            <Setting title="Match Chrome tab groups" desc="Groups appear as Chrome tab groups, and a tab group you name in Chrome becomes a group here.">
               <div className="row">
                 <button className="btn sm" onClick={() => fb.run(() => rpc('workspaces.importGroups', {}), (r) => `Imported ${plural(r.count, 'workspace')}`)}>
                   Import groups now
@@ -99,22 +97,22 @@ export function SettingsView() {
                 <Toggle checked={s.workspaces.syncTabGroups} onChange={(v) => save({ workspaces: { syncTabGroups: v } })} label="Sync tab groups" />
               </div>
             </Setting>
-            <Setting title="When switching workspaces, collapse other groups">
+            <Setting title="When showing a group, collapse the others in Chrome">
               <Toggle checked={s.workspaces.collapseOthersOnSwitch} onChange={(v) => save({ workspaces: { collapseOthersOnSwitch: v } })} label="Collapse others" />
             </Setting>
-            <Setting title="When switching workspaces, put other workspaces to sleep">
+            <Setting title="When showing a group, put the others to sleep">
               <Toggle checked={s.workspaces.sleepOthersOnSwitch} onChange={(v) => save({ workspaces: { sleepOthersOnSwitch: v } })} label="Sleep others" />
             </Setting>
           </Group>
 
-          <Group title="Sleep, restore and history">
+          <Group title="Sleeping, reopening and history">
             <Setting title="Pinned tabs never sleep automatically">
               <Toggle checked={s.sleep.protectPinned} onChange={(v) => save({ sleep: { protectPinned: v } })} label="Protect pinned" />
             </Setting>
-            <Setting title="Restore big sets of tabs asleep" desc="When reopening several tabs, only the first loads; the rest load when clicked.">
+            <Setting title="Reopen many tabs without slowing down" desc="When reopening several tabs, only the first loads; the rest load when you click them.">
               <Toggle checked={s.restore.lazy} onChange={(v) => save({ restore: { lazy: v } })} label="Lazy restore" />
             </Setting>
-            <Setting title="Automatic snapshots" desc="Saves all windows periodically so you can recover after a crash. Only kept when something changed.">
+            <Setting title="Save sessions automatically" desc="Saves all your windows every so often, so you can recover after a crash. Find them in History → Saved Sessions.">
               <div className="row">
                 {s.snapshots.autoEnabled && (
                   <select className="select" value={s.snapshots.intervalMinutes} onChange={(e) => save({ snapshots: { intervalMinutes: Number(e.target.value) } })} aria-label="Snapshot interval">
@@ -128,7 +126,7 @@ export function SettingsView() {
                 <Toggle checked={s.snapshots.autoEnabled} onChange={(v) => save({ snapshots: { autoEnabled: v } })} label="Auto snapshots" />
               </div>
             </Setting>
-            <Setting title="Keep recently closed tabs for" desc="Archived tabs and snapshots you save are never removed automatically.">
+            <Setting title="Keep recently closed tabs for" desc="Archived tabs and sessions you save are never removed automatically.">
               <select className="select" value={s.history.closedRetentionDays} onChange={(e) => save({ history: { closedRetentionDays: Number(e.target.value) } })} aria-label="Retention">
                 {[7, 30, 60, 180, 365, 0].map((d) => (
                   <option key={d} value={d}>
@@ -137,7 +135,7 @@ export function SettingsView() {
                 ))}
               </select>
             </Setting>
-            <Setting title="Excluded from automation and AI" desc="Domains or patterns like example.com/admin*. Matching tabs are never slept, archived, organized or sent to an AI provider." stack>
+            <Setting title="Sites TabOS should leave alone" desc="Domains or patterns like example.com/admin*. Matching tabs are never put to sleep, archived, grouped or sent to an AI service." stack>
               <ListEditor values={s.exclusions} placeholder="example.com/private*" onChange={(v) => save({ exclusions: v })} />
             </Setting>
           </Group>
@@ -176,6 +174,45 @@ function Group({ title, id, children }: { title: string; id?: string; children: 
       <h2>{title}</h2>
       <div className="card">{children}</div>
     </section>
+  );
+}
+
+const FRIENDLY: Record<string, string> = {
+  'meet.google.com': 'Google Meet',
+  'zoom.us': 'Zoom',
+  'teams.microsoft.com': 'Teams',
+  'teams.live.com': 'Teams',
+  'mail.google.com': 'Gmail',
+  'calendar.google.com': 'Google Calendar',
+  'outlook.office.com': 'Outlook',
+  'outlook.live.com': 'Outlook',
+  'web.whatsapp.com': 'WhatsApp',
+  'app.slack.com': 'Slack',
+  'discord.com': 'Discord',
+  'music.youtube.com': 'YouTube Music',
+  'open.spotify.com': 'Spotify',
+};
+const friendlySite = (d: string) => FRIENDLY[d] ?? d;
+
+/** Summary first ("Google Meet, Zoom and 11 more"), full editor one click deeper. */
+function ProtectedSites({ values, onChange }: { values: string[]; onChange: (v: string[]) => void }) {
+  const [editing, setEditing] = useState(false);
+  const pretty = values.slice(0, 3).map(friendlySite);
+  return (
+    <div className={`setting ${editing ? 'stack' : ''}`}>
+      <div className="row" style={{ alignItems: 'flex-start' }}>
+        <div className="grow">
+          <div style={{ fontWeight: 550 }}>Sites that always stay awake</div>
+          <div className="desc">
+            {values.length ? `${pretty.join(', ')}${values.length > 3 ? ` and ${values.length - 3} more` : ''}. Calls, chat and music keep working.` : 'None. Add sites like video calls or chat.'}
+          </div>
+        </div>
+        <button className="btn sm" onClick={() => setEditing((e) => !e)}>
+          {editing ? 'Done' : 'Edit'}
+        </button>
+      </div>
+      {editing && <ListEditor values={values} placeholder="example.com" onChange={onChange} />}
+    </div>
   );
 }
 
@@ -269,10 +306,10 @@ function AISection({ ai, save }: { ai: AISettings; save: (p: SettingsPatch) => P
             <Lock style={{ width: 14, height: 14, color: 'var(--st-open)' }} /> Built-in AI, private and offline
           </span>
         }
-        desc="Organize, semantic search and related tabs run inside the extension by default. No account, no cost, nothing sent anywhere."
+        desc="Grouping, search and similar tabs run inside the extension. No account, no cost, nothing sent anywhere."
       >
         <button className="btn sm" onClick={() => setOpen((o) => !o)}>
-          {open ? 'Hide providers' : 'Connect a provider'}
+          {open ? 'Hide' : 'Use another AI service'}
         </button>
       </Setting>
       {open && (
@@ -321,7 +358,7 @@ function AISection({ ai, save }: { ai: AISettings; save: (p: SettingsPatch) => P
             <label className="check" style={{ alignItems: 'flex-start' }}>
               <input type="checkbox" checked={draft.externalConsent} onChange={(e) => set({ externalConsent: e.target.checked })} style={{ marginTop: 2 }} />
               <span>
-                <strong>Allow sending tab titles and URLs</strong> (and page descriptions, if collected) to this provider when I use Organize, Search or Related tabs. Page contents are never sent. Excluded sites are never sent. API keys are stored only on this device.
+                <strong>Allow sending tab titles and URLs</strong> (and page descriptions, if collected) to this provider when I use Group Tabs, Search or Similar tabs. Page contents are never sent. Excluded sites are never sent. API keys are stored only on this device.
               </span>
             </label>
           )}
@@ -446,7 +483,7 @@ function DataSection() {
     try {
       const bundle = JSON.parse(await file.text()) as ExportBundle;
       if (bundle?.format !== 'tabos-export') throw new Error('This file is not a TabOS export.');
-      if (!(await fb.confirm({ title: 'Import this file?', body: `${plural(bundle.tabs?.length ?? 0, 'tab')}, ${plural(bundle.workspaces?.length ?? 0, 'workspace')} and ${plural(bundle.snapshots?.length ?? 0, 'snapshot')} will be merged. Nothing existing is overwritten; imported open tabs arrive as archived.`, confirmLabel: 'Import' })))
+      if (!(await fb.confirm({ title: 'Import this file?', body: `${plural(bundle.tabs?.length ?? 0, 'tab')}, ${plural(bundle.workspaces?.length ?? 0, 'group')} and ${plural(bundle.snapshots?.length ?? 0, 'snapshot')} will be merged. Nothing existing is overwritten; imported open tabs arrive as archived.`, confirmLabel: 'Import' })))
         return;
       await fb.run(() => rpc('data.import', { bundle }), (r) => `Imported ${plural(r.count, 'item')}`);
     } catch (err) {
@@ -455,7 +492,7 @@ function DataSection() {
   };
   return (
     <Group title="Data">
-      <Setting title="Export" desc="Tabs, workspaces, snapshots and settings as JSON. API keys are left out.">
+      <Setting title="Export" desc="Tabs, groups, sessions and settings as a file. API keys are left out.">
         <button className="btn sm" onClick={exportData}>
           <Download /> Export
         </button>

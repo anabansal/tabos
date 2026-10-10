@@ -1,23 +1,35 @@
-import { AppWindow, History, Inbox, LayoutGrid, Layers, Plus, Search, Settings as SettingsIcon, Wand2, Brush, AlertTriangle, Info } from 'lucide-react';
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { findDuplicateGroups } from '../core/duplicates';
+import { AlertTriangle, Archive, Clock, Layers, Plus, Search, Settings as SettingsIcon, Sparkles, Wand2, Inbox } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { rpc, type WorkerStatus } from '../shared/messages';
 import type { TabRecord } from '../shared/types';
 import { Banner, LoadingRows, WsDot } from '../ui/components';
 import { useFeedback } from '../ui/feedback';
 import { navigate, useChromeWindows, useHashRoute, useRecords, useSettings, useTheme, useWorkspaces } from '../ui/hooks';
+import { DRAG_TYPE, useGroupActions } from '../ui/TabList';
 import { DataProvider, isLive, type DashboardData } from './data';
 import { RelatedDrawer } from './RelatedDrawer';
-import { CleanView } from './views/CleanView';
-import { DuplicatesView } from './views/DuplicatesView';
-import { OrganizeView } from './views/OrganizeView';
-import { Overview } from './views/Overview';
-import { RecoveryView } from './views/RecoveryView';
+import { ArchiveView } from './views/ArchiveView';
+import { GroupTabsView } from './views/GroupTabsView';
+import { GroupView } from './views/GroupView';
+import { HistoryView } from './views/HistoryView';
 import { SearchView } from './views/SearchView';
 import { SettingsView } from './views/SettingsView';
-import { TabsView } from './views/TabsView';
-import { WindowsView } from './views/WindowsView';
-import { WorkspaceView } from './views/WorkspaceView';
+import { TabsHome } from './views/TabsHome';
+import { TidyView } from './views/TidyView';
+
+/** Old routes from earlier versions and links in notifications keep working. */
+const ALIASES: Record<string, string> = {
+  overview: '',
+  tabs: '',
+  welcome: '',
+  windows: '',
+  workspace: 'group',
+  clean: 'tidy',
+  duplicates: 'tidy',
+  organize: 'group-tabs',
+  recovery: 'history',
+  activity: 'history',
+};
 
 export function App() {
   const route = useHashRoute();
@@ -26,56 +38,72 @@ export function App() {
   const [settings, saveSettings] = useSettings();
   const windows = useChromeWindows();
   const fb = useFeedback();
+  const ga = useGroupActions();
   const [related, setRelated] = useState<TabRecord | null>(null);
   const [status, setStatus] = useState<WorkerStatus | null>(null);
-  const [newWs, setNewWs] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [dropOn, setDropOn] = useState<string | null>(null);
   useTheme(settings);
 
   useEffect(() => {
-    rpc('system.status', {}).then(setStatus).catch((e) => setStatus({ startedAt: 0, lastReconcileAt: null, lastError: String(e.message ?? e), db: { ok: false, error: 'Background unavailable' } }));
+    rpc('system.status', {})
+      .then(setStatus)
+      .catch((e) => setStatus({ startedAt: 0, lastReconcileAt: null, lastError: String(e.message ?? e), db: { ok: false, error: 'TabOS background is not responding' } }));
   }, []);
 
-  const wsMap = useMemo(() => new Map((workspaces ?? []).map((w) => [w.id, w])), [workspaces]);
+  const raw = route.path[0] ?? '';
+  const view = raw in ALIASES ? ALIASES[raw] : raw;
+  const firstRun = raw === 'welcome';
+  // Leaving a page clears the filter, so a stale query never hides tabs.
+  useEffect(() => setQuery(view === 'search' ? (route.params.get('q') ?? '') : ''), [view, route.params]);
+  useEffect(() => {
+    if (raw === 'activity') navigate('/history?tab=undo');
+    if (raw === 'windows') navigate('/?by=window');
+  }, [raw]);
+
   const counts = useMemo(() => {
-    const c = { live: 0, open: 0, sleeping: 0, archived: 0, closed: 0, unassigned: 0, dups: 0, byWs: new Map<string, number>() };
+    const c = { live: 0, archived: 0, other: 0, byWs: new Map<string, number>() };
     for (const r of records ?? []) {
-      c[r.status]++;
-      if (isLive(r)) {
-        c.live++;
-        if (!r.workspaceId) c.unassigned++;
-        else c.byWs.set(r.workspaceId, (c.byWs.get(r.workspaceId) ?? 0) + 1);
-      }
+      if (r.status === 'archived') c.archived++;
+      if (!isLive(r)) continue;
+      c.live++;
+      if (!r.workspaceId) c.other++;
+      else c.byWs.set(r.workspaceId, (c.byWs.get(r.workspaceId) ?? 0) + 1);
     }
-    c.dups = findDuplicateGroups(records ?? []).reduce((n, g) => n + g.recordIds.length - 1, 0);
     return c;
   }, [records]);
 
-  const ready = records && workspaces && settings;
-  const data: DashboardData | null = ready
-    ? { records, workspaces, wsMap, settings, saveSettings, windows, openRelated: setRelated, openClean: () => navigate('/clean') }
-    : null;
+  const wsMap = useMemo(() => new Map((workspaces ?? []).map((w) => [w.id, w])), [workspaces]);
+  const data: DashboardData | null =
+    records && workspaces && settings ? { records, workspaces, wsMap, settings, saveSettings, windows, query, openRelated: setRelated } : null;
 
-  const view = route.path[0] ?? '';
-  const isActive = (p: string, param: [string, string]) => view === p && route.params.get(param[0]) === param[1];
+  const dropProps = (groupId: string | null, name?: string) => ({
+    onDragOver: (e: React.DragEvent) => {
+      if (!e.dataTransfer.types.includes(DRAG_TYPE)) return;
+      e.preventDefault();
+      setDropOn(groupId ?? 'none');
+    },
+    onDragLeave: () => setDropOn(null),
+    onDrop: (e: React.DragEvent) => {
+      e.preventDefault();
+      setDropOn(null);
+      const ids = JSON.parse(e.dataTransfer.getData(DRAG_TYPE) || '[]') as string[];
+      if (ids.length) void ga.moveTo(ids, groupId, name);
+    },
+  });
 
-  const createWs = async (e: FormEvent) => {
-    e.preventDefault();
-    const name = newWs?.trim();
-    if (!name) return setNewWs(null);
+  const newGroup = async () => {
+    const name = await fb.prompt({ title: 'New group', placeholder: 'Name, e.g. Trip to Japan', confirmLabel: 'Create' });
+    if (!name) return;
     try {
       const ws = await rpc('workspaces.create', { name });
-      setNewWs(null);
-      navigate(`/workspace/${ws.id}`);
+      navigate(`/group/${ws.id}`);
     } catch (err) {
       fb.error(err);
     }
   };
 
-  const [q, setQ] = useState('');
-  useEffect(() => {
-    setQ(view === 'search' ? (route.params.get('q') ?? '') : '');
-  }, [view, route.params]);
-
+  const groupId = view === 'group' ? route.path[1] : null;
   return (
     <div className="app">
       <aside className="sidebar">
@@ -84,110 +112,98 @@ export function App() {
           TabOS
         </div>
         <nav className="nav" aria-label="Main">
-          <a href="#/" className={view === '' || view === 'welcome' ? 'active' : ''}>
-            <LayoutGrid /> Home
-          </a>
-          <a href="#/tabs" className={view === 'tabs' && !route.params.get('ws') ? 'active' : ''}>
+          <a href="#/" className={view === '' ? 'active' : ''}>
             <Layers /> Tabs <span className="count">{counts.live}</span>
           </a>
-          <a href="#/windows" className={view === 'windows' ? 'active' : ''}>
-            <AppWindow /> Windows <span className="count">{windows.length}</span>
+          <a href="#/archive" className={view === 'archive' ? 'active' : ''}>
+            <Archive /> Archive {counts.archived > 0 && <span className="count">{counts.archived}</span>}
           </a>
-          <a href="#/recovery" className={view === 'recovery' ? 'active' : ''}>
-            <History /> Recovery
-          </a>
-          <a href="#/settings" className={view === 'settings' ? 'active' : ''}>
-            <SettingsIcon /> Settings
+          <a href="#/history" className={view === 'history' ? 'active' : ''}>
+            <Clock /> History
           </a>
         </nav>
         <div>
           <div className="nav-head">
-            <span className="section-title">Workspaces</span>
-            <button className="btn ghost icon sm" aria-label="New workspace" title="New workspace" onClick={() => setNewWs('')}>
+            <span className="section-title">Groups</span>
+            <button className="btn ghost icon sm" aria-label="New group" title="New group" onClick={newGroup}>
               <Plus />
             </button>
           </div>
-          <nav className="nav" aria-label="Workspaces">
-            {newWs !== null && (
-              <form onSubmit={createWs} style={{ padding: '2px 0 4px' }}>
-                <input
-                  className="input"
-                  autoFocus
-                  placeholder="Workspace name"
-                  value={newWs}
-                  onChange={(e) => setNewWs(e.target.value)}
-                  onBlur={() => !newWs?.trim() && setNewWs(null)}
-                  onKeyDown={(e) => e.key === 'Escape' && setNewWs(null)}
-                  style={{ width: '100%' }}
-                />
-              </form>
-            )}
+          <nav className="nav" aria-label="Groups">
             {(workspaces ?? []).map((w) => (
-              <a key={w.id} href={`#/workspace/${w.id}`} className={view === 'workspace' && route.path[1] === w.id ? 'active' : ''}>
+              <a key={w.id} href={`#/group/${w.id}`} className={`${groupId === w.id ? 'active' : ''} ${dropOn === w.id ? 'drop-target' : ''}`} {...dropProps(w.id, w.name)}>
                 <WsDot color={w.color} />
                 <span className="ellipsis">{w.name}</span>
                 <span className="count">{counts.byWs.get(w.id) ?? 0}</span>
               </a>
             ))}
-            <a href="#/tabs?ws=none" className={isActive('tabs', ['ws', 'none']) ? 'active' : ''}>
-              <Inbox /> Unassigned <span className="count">{counts.unassigned}</span>
+            <a href="#/?group=none" className={`${dropOn === 'none' ? 'drop-target' : ''}`} {...dropProps(null)}>
+              <Inbox /> Other tabs <span className="count">{counts.other}</span>
             </a>
+            {!workspaces?.length && (
+              <span className="faint small" style={{ padding: '4px 10px' }}>
+                Drag tabs here, or use Group Tabs.
+              </span>
+            )}
           </nav>
         </div>
+        <nav className="nav">
+          <a href="#/settings" className={view === 'settings' ? 'active' : ''}>
+            <SettingsIcon /> Settings
+          </a>
+        </nav>
         <div className="sidebar-foot">
-          <span>
-            <span className="kbd">Alt</span> <span className="kbd">Shift</span> <span className="kbd">K</span> popup
-          </span>
-          <span>
-            Type <span className="kbd">tab</span> + <span className="kbd">Space</span> in the address bar
-          </span>
+          <span className="kbd">Alt</span> <span className="kbd">Shift</span> <span className="kbd">K</span> opens TabOS anywhere
         </div>
       </aside>
 
       <main className="main">
-        <div className="topbar">
-          {view !== 'search' && (<form
+        <div className="toolbar">
+          <form
             className="search-field"
             onSubmit={(e) => {
               e.preventDefault();
-              navigate(`/search?q=${encodeURIComponent(q)}`);
+              if (query.trim()) navigate(`/search?q=${encodeURIComponent(query)}`);
             }}
           >
             <Search />
-            <input className="input" placeholder="Search tabs, e.g. “paper about semantic entropy last week”" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search" />
-          </form>)}
+            <input
+              className="input"
+              placeholder="Search tabs. Press Enter to ask in your own words"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Escape' && setQuery('')}
+              aria-label="Search tabs"
+            />
+          </form>
           <div className="spacer" />
-          <button className="btn" onClick={() => navigate('/organize')}>
-            <Wand2 /> Organize
+          <button className="btn" onClick={() => navigate('/group-tabs')}>
+            <Wand2 /> Group Tabs
           </button>
-          <button className="btn primary" onClick={() => navigate('/clean')}>
-            <Brush /> Clean
+          <button className="btn primary" onClick={() => navigate('/tidy')}>
+            <Sparkles /> Tidy Up
           </button>
         </div>
 
         <div className="page">
           {status && !status.db.ok && (
             <Banner kind="error" icon={AlertTriangle}>
-              <strong>Storage problem:</strong> {status.db.error}. TabOS can't save changes until this is fixed. Try reloading the extension; if it persists, check that Chrome has disk space.
+              <strong>TabOS can't save right now.</strong> {status.db.error}. Reload the extension from chrome://extensions; if it keeps happening, check free disk space.
             </Banner>
           )}
-          {view === 'welcome' && <Welcome />}
           {!data ? (
             <div className="card">
               <LoadingRows />
             </div>
           ) : (
             <DataProvider value={data}>
-              {(view === '' || view === 'welcome') && <Overview />}
-              {view === 'tabs' && <TabsView params={route.params} />}
-              {view === 'workspace' && <WorkspaceView id={route.path[1]} />}
-              {view === 'windows' && <WindowsView />}
-              {view === 'duplicates' && <DuplicatesView />}
-              {view === 'recovery' && <RecoveryView tab={route.params.get('tab') ?? 'closed'} />}
+              {view === '' && <TabsHome firstRun={firstRun} by={route.params.get('by') === 'window' ? 'window' : 'group'} onlyOther={route.params.get('group') === 'none'} />}
+              {view === 'group' && <GroupView id={route.path[1]} />}
+              {view === 'archive' && <ArchiveView />}
+              {view === 'history' && <HistoryView tab={route.params.get('tab') ?? 'closed'} />}
+              {view === 'tidy' && <TidyView />}
+              {view === 'group-tabs' && <GroupTabsView />}
               {view === 'search' && <SearchView query={route.params.get('q') ?? ''} />}
-              {view === 'organize' && <OrganizeView />}
-              {view === 'clean' && <CleanView />}
-              {view === 'activity' && <RecoveryView tab="activity" />}
               {view === 'settings' && <SettingsView />}
               {related && <RelatedDrawer record={related} onClose={() => setRelated(null)} />}
             </DataProvider>
@@ -195,13 +211,5 @@ export function App() {
         </div>
       </main>
     </div>
-  );
-}
-
-function Welcome() {
-  return (
-    <Banner kind="info" icon={Info}>
-      <strong>Welcome to TabOS.</strong> It already sees every tab in every window, and tabs you haven't used for 45 minutes go to sleep to save memory. Nothing is closed without asking you, and everything stays on this device. Start with <a href="#/organize">Organize</a> to sort your tabs into workspaces.
-    </Banner>
   );
 }
