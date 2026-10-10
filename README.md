@@ -170,6 +170,7 @@ npm run build        # typecheck + production build into dist/
 npm test             # unit tests (Vitest)
 npm run test:e2e     # end-to-end tests in real Chrome for Testing
 npm run screenshots  # regenerate docs/screenshots from a scripted walkthrough
+npm run demo         # open a separate Chrome window with TabOS and sample tabs to try it
 ```
 
 The end-to-end suite downloads Chrome for Testing on first run (`npx puppeteer browsers install chrome`) and loads the built extension. It covers tracking, sleeping and protection, archive and undo, restore, duplicates, two-way tab-group sync, workspace inheritance, snapshots, moving and merging windows, Clean, auto-organize, and a full browser restart.

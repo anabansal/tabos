@@ -36,7 +36,8 @@
     "test:watch": "vitest",
     "test:e2e": "npm run build && node --test tests/e2e/extension.test.mjs",
     "screenshots": "npm run build && node tests/e2e/walkthrough.mjs docs/screenshots",
-    "icons": "node scripts/make-icons.mjs"
+    "icons": "node scripts/make-icons.mjs",
+    "demo": "npm run build && node scripts/demo.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",
