@@ -33,7 +33,7 @@ export async function applyOrganization(req: OrganizeApplyRequest): Promise<Outc
       assigned.add(r.id);
       if (r.workspaceId === ws.id) continue;
       changes.push({ recordId: r.id, prevWorkspaceId: r.workspaceId });
-      await db.tabs.update(r.id, { workspaceId: ws.id, updatedAt: now });
+      await db.tabs.update(r.id, { workspaceId: ws.id, autoAssigned: false, updatedAt: now });
       if (!req.createChromeGroups && isLive(r) && r.windowId != null) {
         await placeTabForWorkspace(r.chromeTabId!, r.windowId, r.groupId, ws.id);
       }

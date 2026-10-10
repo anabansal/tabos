@@ -2,7 +2,7 @@
 // Run: npm run test:e2e
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { launch, controlPage, startServer, openPages, until, wait } from './harness.mjs';
+import { launch, controlPage, startServer, openPages, openFakeSite, until, wait } from './harness.mjs';
 
 let server, base, browser, extId, userDataDir, cleanup, ctl;
 
@@ -182,6 +182,47 @@ test('clean preview → execute sleeps, archives and closes, then undo reverses 
   await ctl.rpc('activity.undo', { id: res.activityId });
   const recs = await ctl.records();
   assert.ok(sleep.every((id) => recs.find((r) => r.id === id).status === 'open'));
+});
+
+test('auto-organize creates a topic workspace + Chrome group on its own, and undo reverses it', async () => {
+  await ctl.page.evaluate(async () => {
+    const { settings } = await chrome.storage.local.get('settings');
+    await chrome.storage.local.set({ settings: { ...(settings ?? {}), workspaces: { ...(settings?.workspaces ?? {}), autoOrganize: true, syncTabGroups: true, autoAssignNewTabs: false } } });
+  });
+  await openFakeSite(browser, 'https://www.amazon.com/dp/B09XS7JWHH', 'Sony WH-1000XM5 Headphones : Amazon.com');
+  await openFakeSite(browser, 'https://www.bestbuy.com/site/bose-qc-ultra', 'Bose QuietComfort Ultra Headphones - Best Buy');
+  await openFakeSite(browser, 'https://www.flipkart.com/laptops', 'Buy Laptops Online at Best Prices | Flipkart');
+  // An earlier test made a Shopping workspace from a Chrome group; auto-organize reuses it (or creates one).
+  const ws = await until(async () => (await ctl.store('workspaces')).find((w) => w.name === 'Shopping'), { label: 'Shopping workspace', timeout: 15000 });
+  const isNew = (r) => /amazon\.com|bestbuy\.com|flipkart\.com/.test(r.url) && (r.status === 'open' || r.status === 'sleeping');
+  const sorted = await until(async () => {
+    const recs = (await ctl.records()).filter((r) => isNew(r) && r.workspaceId === ws.id);
+    return recs.length >= 3 ? recs : null;
+  }, { label: 'tabs sorted' });
+  // Each sorted tab ends up in a Chrome tab group named after the workspace (one group per window).
+  await until(async () => {
+    const groupIds = new Set((await ctl.chrome(() => chrome.tabGroups.query({ title: 'Shopping' }))).map((g) => g.id));
+    const tabs = await liveTabs();
+    const ok = sorted.every((r) => groupIds.has(tabs.find((t) => t.id === r.chromeTabId)?.groupId));
+    return ok;
+  }, { label: 'tabs grouped in Chrome' });
+  // A later shopping tab joins the existing workspace.
+  await openFakeSite(browser, 'https://www.ebay.com/itm/123', 'Apple AirPods Pro for sale | eBay');
+  await until(async () => (await ctl.records()).some((r) => r.url.includes('ebay.com') && r.workspaceId === ws.id), { label: 'joins existing', timeout: 15000 });
+  // Undo the first auto-sort: workspace removed, tabs unassigned, and not immediately re-sorted.
+  const entries = (await ctl.store('activity')).filter((e) => e.label.startsWith('Auto-sorted') && !e.undoneAt).sort((x, y) => y.at - x.at);
+  assert.ok(entries.length >= 1, 'auto-sort is logged');
+  // Where each tab was before auto-organize touched it (unassigned, or an inherited workspace).
+  const prev = new Map();
+  for (const e of [...entries].reverse()) for (const c of e.undo.changes) if (!prev.has(c.recordId)) prev.set(c.recordId, c.prevWorkspaceId);
+  for (const e of entries) await ctl.rpc('activity.undo', { id: e.id });
+  await wait(3500);
+  const after = await ctl.records();
+  assert.ok(sorted.every((r) => after.find((x) => x.id === r.id).workspaceId === prev.get(r.id)), 'undo restored previous workspaces and auto-organize did not redo it');
+  await ctl.page.evaluate(async () => {
+    const { settings } = await chrome.storage.local.get('settings');
+    await chrome.storage.local.set({ settings: { ...settings, workspaces: { ...settings.workspaces, autoOrganize: false, autoAssignNewTabs: true } } });
+  });
 });
 
 test('survives a browser restart: records rebind to new tab ids and keep their workspaces', async () => {

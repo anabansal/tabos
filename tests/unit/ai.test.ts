@@ -190,3 +190,53 @@ describe('providers', () => {
     expect(() => parseNaming('no json here', groups)).toThrow();
   });
 });
+
+describe('auto-organize', () => {
+  const ws = (id: string, name: string) => ({ id, name, color: 'blue' as const, summary: '', source: 'manual' as const, isProtected: false, order: 0, createdAt: 0, updatedAt: 0, lastActiveAt: 0 });
+  it('puts new tabs into the workspace whose topic they clearly match', async () => {
+    const { planAutoSort } = await import('../../src/ai/autoSort');
+    const coding = ws('c', 'Coding');
+    const members = [rec('https://github.com/a/b', 'a/b: a repo', { workspaceId: 'c' })];
+    const fresh = rec('https://stackoverflow.com/questions/1/x', 'How to fix TypeScript error TS2345 - Stack Overflow', { workspaceId: null });
+    const plan = planAutoSort({ candidates: [fresh], workspaces: [coding], members, exclusions: [], minNewGroup: 3 });
+    expect(plan.assign).toEqual([expect.objectContaining({ recordId: fresh.id, workspaceId: 'c' })]);
+    expect(plan.checked).toEqual([fresh.id]);
+  });
+  it('creates a topic workspace only when enough tabs share it, and never for vague tabs', async () => {
+    const { planAutoSort } = await import('../../src/ai/autoSort');
+    const shop = [
+      rec('https://www.amazon.com/dp/1', 'Sony WH-1000XM5 Headphones : Amazon.com'),
+      rec('https://www.bestbuy.com/site/2', 'Bose QuietComfort Ultra - Best Buy'),
+      rec('https://www.flipkart.com/laptops', 'Buy Laptops Online at Best Prices | Flipkart'),
+    ];
+    const vague = rec('https://example.org/page', 'Untitled page');
+    const two = planAutoSort({ candidates: shop.slice(0, 2), workspaces: [], members: [], exclusions: [], minNewGroup: 3 });
+    expect(two.create).toEqual([]);
+    const three = planAutoSort({ candidates: [...shop, vague], workspaces: [], members: [], exclusions: [], minNewGroup: 3 });
+    expect(three.create).toEqual([expect.objectContaining({ name: 'Shopping', recordIds: shop.map((r) => r.id) })]);
+    expect(three.assign).toEqual([]);
+    expect(three.checked).toContain(vague.id);
+  });
+  it('never sorts excluded tabs or non-web pages', async () => {
+    const { planAutoSort } = await import('../../src/ai/autoSort');
+    const r1 = rec('https://www.amazon.com/dp/1', 'Headphones : Amazon.com');
+    const r2 = rec('chrome://settings', 'Settings');
+    const plan = planAutoSort({ candidates: [r1, r2], workspaces: [ws('s', 'Shopping')], members: [], exclusions: ['amazon.com'], minNewGroup: 1 });
+    expect(plan.assign).toEqual([]);
+    expect(plan.create).toEqual([]);
+  });
+});
+
+describe('auto-organize corrections', () => {
+  const ws = (id: string, name: string) => ({ id, name, color: 'blue' as const, summary: '', source: 'manual' as const, isProtected: false, order: 0, createdAt: 0, updatedAt: 0, lastActiveAt: 0 });
+  it('moves an auto-inherited tab to the workspace it clearly belongs to, but leaves it if it already fits', async () => {
+    const { planAutoSort } = await import('../../src/ai/autoSort');
+    const shopping = ws('s', 'Shopping');
+    const coding = ws('c', 'Coding');
+    const members = [rec('https://www.amazon.com/dp/9', 'Kindle : Amazon.com', { workspaceId: 's' }), rec('https://github.com/x/y', 'x/y', { workspaceId: 'c' })];
+    const inherited = rec('https://www.amazon.com/dp/1', 'Sony WH-1000XM5 Headphones : Amazon.com', { workspaceId: 'c', autoAssigned: true });
+    const fits = rec('https://stackoverflow.com/q/1', 'TypeError in React useEffect - Stack Overflow', { workspaceId: 'c', autoAssigned: true });
+    const plan = planAutoSort({ candidates: [inherited, fits], workspaces: [shopping, coding], members, exclusions: [], minNewGroup: 3 });
+    expect(plan.assign).toEqual([expect.objectContaining({ recordId: inherited.id, workspaceId: 's' })]);
+  });
+});

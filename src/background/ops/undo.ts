@@ -20,7 +20,8 @@ export async function applyUndo(payload: UndoPayload): Promise<Outcome> {
       }
       const out = await openRecords(
         recs.filter((r) => !isLive(r)).map((r) => r.id),
-        { target: 'auto', focus: false },
+        // Undoing a small archive should feel instant: only big batches come back asleep.
+        { target: 'auto', focus: false, lazy: recs.length > 3 ? undefined : false },
       );
       return { count: out.count, skipped: out.skipped, undo: null };
     }

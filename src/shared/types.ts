@@ -61,6 +61,10 @@ export interface TabRecord {
   closeReason: CloseReason | null;
   restoreHint: RestoreHint | null;
   meta: PageMeta | null;
+  /** URL at which auto-organize last evaluated this tab, so it isn't re-sorted until it navigates. */
+  sortCheckedUrl?: string | null;
+  /** Workspace was set automatically (inherited or auto-organized), so auto-organize may move it. */
+  autoAssigned?: boolean;
 }
 
 export type WorkspaceSource = 'manual' | 'ai' | 'tab-group' | 'import';

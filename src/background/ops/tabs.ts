@@ -389,7 +389,8 @@ export async function assignRecords(ids: string[], workspaceId: string | null): 
   for (const rec of recs) {
     if (rec.workspaceId === workspaceId) continue;
     changes.push({ recordId: rec.id, prevWorkspaceId: rec.workspaceId });
-    await db.tabs.update(rec.id, { workspaceId, updatedAt: now });
+    // A tab the user takes out of a workspace stays out (auto-organize skips it until it navigates).
+    await db.tabs.update(rec.id, { workspaceId, updatedAt: now, autoAssigned: false, ...(workspaceId ? {} : { sortCheckedUrl: rec.normalizedUrl }) });
     if (isLive(rec) && rec.windowId != null) await placeTabForWorkspace(rec.chromeTabId!, rec.windowId, rec.groupId, workspaceId);
   }
   return {

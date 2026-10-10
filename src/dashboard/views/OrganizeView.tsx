@@ -6,7 +6,7 @@ import { db } from '../../shared/db';
 import { rpc } from '../../shared/messages';
 import type { GroupColor, OrganizeProposal, ProposedGroup } from '../../shared/types';
 import { GROUP_COLORS } from '../../shared/types';
-import { Banner, EmptyState, Favicon, Menu, WsDot } from '../../ui/components';
+import { Banner, EmptyState, Favicon, Menu, Toggle, WsDot } from '../../ui/components';
 import { errorMessage, useFeedback } from '../../ui/feedback';
 import { plural } from '../../ui/format';
 import { isLive, useData } from '../data';
@@ -18,7 +18,7 @@ interface EditableGroup extends ProposedGroup {
 }
 
 export function OrganizeView() {
-  const { records, workspaces, settings } = useData();
+  const { records, workspaces, settings, saveSettings } = useData();
   const fb = useFeedback();
   const [scope, setScope] = useState<Scope>('unassigned');
   const [chromeGroups, setChromeGroups] = useState(settings.workspaces.syncTabGroups);
@@ -135,6 +135,16 @@ export function OrganizeView() {
             </span>
           )}
           {inScope.length < 2 && !stage && <span className="muted">Open a few more tabs (or pick “All open tabs”) to get suggestions.</span>}
+          <hr className="divider" />
+          <label className="row" style={{ gap: 10 }}>
+            <Toggle checked={settings.workspaces.autoOrganize} onChange={(v) => saveSettings({ workspaces: { autoOrganize: v } }).catch(fb.error)} label="Auto-organize" />
+            <span>
+              <strong>Keep sorting new tabs automatically</strong>
+              <span className="faint" style={{ display: 'block', fontSize: 12 }}>
+                Confident matches only. Creates topic workspaces once 3 tabs share a topic. Undo any time.
+              </span>
+            </span>
+          </label>
         </div>
       )}
 

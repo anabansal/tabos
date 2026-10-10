@@ -156,12 +156,16 @@ export async function groupWorkspaceInChrome(workspaceId: string, onlyWindowId?:
   if (!ws) throw new Error('Workspace not found');
   const recs = (await db.tabs.where('workspaceId').equals(workspaceId).toArray()).filter(isLive);
   const byWindow = new Map<number, number[]>();
+  // Ask Chrome where each tab really is: stored window ids can lag right after moves and merges.
+  const liveById = new Map((await chrome.tabs.query({})).map((t) => [t.id, t]));
   for (const r of recs) {
-    if (r.pinned || r.windowId == null || r.chromeTabId == null) continue;
-    if (onlyWindowId != null && r.windowId !== onlyWindowId) continue;
-    const list = byWindow.get(r.windowId) ?? [];
-    list.push(r.chromeTabId);
-    byWindow.set(r.windowId, list);
+    const tab = r.chromeTabId != null ? liveById.get(r.chromeTabId) : undefined;
+    if (!tab || tab.pinned) continue;
+    if (onlyWindowId != null && tab.windowId !== onlyWindowId) continue;
+    if (tab.windowId !== r.windowId) await db.tabs.update(r.id, { windowId: tab.windowId, index: tab.index });
+    const list = byWindow.get(tab.windowId) ?? [];
+    list.push(tab.id!);
+    byWindow.set(tab.windowId, list);
   }
   const cache = await session.getGroupCache();
   const linked = await session.groupsForWorkspace(workspaceId);

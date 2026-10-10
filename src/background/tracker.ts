@@ -9,6 +9,7 @@ import { onGroupChanged, placeTabForWorkspace, resyncGroups } from './groups';
 import { bindPatch, livePatch, recordByTabId, recordFromTab, tabUrl } from './records';
 import { session } from './session';
 import { maybeCollectMeta } from './metadata';
+import { scheduleAutoSort } from './ops/autoSort';
 
 const REVIVE_WINDOW_MS = 14 * 86_400_000;
 
@@ -56,6 +57,8 @@ async function adoptTab(tab: chrome.tabs.Tab): Promise<TabRecord | null> {
     return { ...revive, ...patch };
   }
   const rec = recordFromTab(tab, now, await inferWorkspace(tab));
+  // Inherited (not chosen) workspaces may be corrected by auto-organize; a Chrome group is a choice.
+  rec.autoAssigned = !!rec.workspaceId && (tab.groupId ?? -1) < 0;
   await db.tabs.add(rec);
   if (rec.workspaceId && tab.groupId === -1) await placeTabForWorkspace(tab.id!, tab.windowId, -1, rec.workspaceId);
   return rec;
@@ -105,7 +108,10 @@ export async function handleUpdated(tabId: number, change: chrome.tabs.OnUpdated
     const wsId = await session.workspaceForGroup(change.groupId);
     if (wsId && wsId !== rec.workspaceId) await db.tabs.update(rec.id, { workspaceId: wsId, updatedAt: now });
   }
-  if (change.status === 'complete') void maybeCollectMeta(rec, tab);
+  if (change.status === 'complete') {
+    void maybeCollectMeta(rec, tab);
+    if (!rec.workspaceId || rec.autoAssigned) scheduleAutoSort();
+  }
 }
 
 export async function handleActivated(info: chrome.tabs.OnActivatedInfo): Promise<void> {

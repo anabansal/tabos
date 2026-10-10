@@ -10,6 +10,7 @@ import { onGroupRemoved } from './groups';
 import { activityIdFromNotification, clearNotification } from './notify';
 import { autoArchiveTick, autoSleepTick, pruneTick } from './ops/clean';
 import { autoSnapshotTick } from './ops/snapshots';
+import { scheduleAutoSort } from './ops/autoSort';
 import { focusRecord } from './ops/tabs';
 import { applyUndo } from './ops/undo';
 import { queue } from './queue';
@@ -109,6 +110,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
     case ALARMS.reconcile:
     case ALARMS.reconcileLate:
       void queue.run(() => safeReconcile({ sameSession: true, markMissing: true }), 'reconcile').finally(scheduleBadge);
+      scheduleAutoSort(500);
       break;
     case ALARMS.hourly:
       void queue.run(async () => {
@@ -128,6 +130,8 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 
 watchSettings((s, prev) => {
   void ensureAlarms();
+  // Turning auto-organize on sorts the tabs that are already open.
+  if (s.workspaces.autoOrganize && !prev?.workspaces.autoOrganize) scheduleAutoSort(300);
   if (!prev || prev.ui.badge !== s.ui.badge) void updateBadge();
 });
 

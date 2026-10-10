@@ -39,6 +39,8 @@ export interface Settings {
     autoAssignNewTabs: boolean;
     /** Keep Chrome tab groups and workspaces in sync (titled groups become workspaces). */
     syncTabGroups: boolean;
+    /** Sort new tabs into matching workspaces (and create topic workspaces) without asking. */
+    autoOrganize: boolean;
     collapseOthersOnSwitch: boolean;
     sleepOthersOnSwitch: boolean;
   };
@@ -91,6 +93,7 @@ export const DEFAULT_SETTINGS: Settings = {
   workspaces: {
     autoAssignNewTabs: true,
     syncTabGroups: true,
+    autoOrganize: false,
     collapseOthersOnSwitch: true,
     sleepOthersOnSwitch: false,
   },

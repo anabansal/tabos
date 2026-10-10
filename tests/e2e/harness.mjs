@@ -104,3 +104,15 @@ export async function openPages(browser, base, specs) {
   }
   return pages;
 }
+
+/** Open a page at a real-looking URL, served offline by request interception (no network needed). */
+export async function openFakeSite(browser, url, title) {
+  const p = await browser.newPage();
+  await p.setRequestInterception(true);
+  p.on('request', (req) => {
+    if (req.isNavigationRequest()) req.respond({ status: 200, contentType: 'text/html; charset=utf-8', body: `<!doctype html><meta charset="utf-8"><title>${title}</title><h1>${title}</h1>` });
+    else req.respond({ status: 404, body: '' });
+  });
+  await p.goto(url);
+  return p;
+}

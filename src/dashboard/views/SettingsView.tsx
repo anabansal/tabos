@@ -39,6 +39,12 @@ export function SettingsView() {
       </div>
 
       <section className="card" style={{ maxWidth: 780 }}>
+        <Setting
+          title="Sort new tabs into workspaces automatically"
+          desc="New tabs join the workspace they clearly belong to, and TabOS creates a workspace (with a Chrome tab group) when 3 or more unsorted tabs share a topic. Runs offline. Every change can be undone."
+        >
+          <Toggle checked={s.workspaces.autoOrganize} onChange={(v) => save({ workspaces: { autoOrganize: v } })} label="Auto-organize" />
+        </Setting>
         <Setting title="Put inactive tabs to sleep" desc="Frees memory. Tabs stay in your tab strip and reload when clicked. Tabs playing audio, visible, or protected never sleep.">
           <div className="row">
             {s.sleep.enabled && (

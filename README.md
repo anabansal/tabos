@@ -52,6 +52,7 @@ Everything runs locally. No account, no server, no tracking.
 | | |
 |---|---|
 | **Organize** | Groups tabs into workspaces such as *AI Research*, *Coding*, *College*, *Shopping* and *Startups*, names them and writes a one-line summary. You review, rename, move tabs, skip groups, then apply. One-click undo. |
+| **Auto-organize** (optional) | Turn it on and new tabs sort themselves: a tab that clearly belongs to a workspace joins it (and its Chrome tab group), and once 3 unsorted tabs share a topic TabOS creates that workspace for you. Confident matches only, runs offline, never overrides a choice you made, and every change has Undo. |
 | **Natural-language search** | Understands topic, kind of page ("paper", "video", "repo", "docs"), time ("yesterday", "last week", "3 days ago", "on Monday") and state ("archived", "I closed"). Each result says why it matched. |
 | **Related tabs** | Finds pages about the same thing across different sites. |
 | **Smart archive suggestions** | Scores tabs by inactivity, duplication and workspace activity. Suggestions only; you approve in Clean. |
@@ -108,7 +109,7 @@ Works in Chrome 120+ and should work in other Chromium browsers (Edge, Brave, Ar
 |---|---|
 | Find a tab | Click the toolbar icon (or <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd>) and type. Or type `tab` + space in the address bar. |
 | Free memory | Nothing to do: idle tabs sleep after 45 minutes. For more, press **Clean**. |
-| Sort tabs into workspaces | Dashboard → **Organize** → review → **Apply**. |
+| Sort tabs into workspaces | Dashboard → **Organize** → review → **Apply**. Or turn on **Sort new tabs automatically** (Settings) and let TabOS do it as you browse. |
 | Switch workspace | Click a workspace in the popup, or **Switch** on its card. |
 | Keep a tab alive | Tab menu → **Protect**, or add the site under Settings → Protected sites. |
 | Get something back | Dashboard → **Recovery**, or press **Undo** on any notification or activity entry. |
@@ -171,7 +172,7 @@ npm run test:e2e     # end-to-end tests in real Chrome for Testing
 npm run screenshots  # regenerate docs/screenshots from a scripted walkthrough
 ```
 
-The end-to-end suite downloads Chrome for Testing on first run (`npx puppeteer browsers install chrome`) and loads the built extension. It covers tracking, sleeping and protection, archive and undo, restore, duplicates, two-way tab-group sync, workspace inheritance, snapshots, moving and merging windows, Clean, and a full browser restart.
+The end-to-end suite downloads Chrome for Testing on first run (`npx puppeteer browsers install chrome`) and loads the built extension. It covers tracking, sleeping and protection, archive and undo, restore, duplicates, two-way tab-group sync, workspace inheritance, snapshots, moving and merging windows, Clean, auto-organize, and a full browser restart.
 
 ### Project layout
 
