@@ -33,14 +33,11 @@ export function ArchiveView() {
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <h1>Archive</h1>
-          <div className="subtitle">Tabs you closed but kept. Reopen them any time. Nothing here is deleted unless you delete it.</div>
-        </div>
+      <div className="page-intro">
+          <p className="lede">Tabs you closed but kept. Reopen them any time. Nothing here is deleted unless you delete it.</p>
       </div>
       {!archived.length ? (
-        <div className="card">
+        <div className="list-card">
           <EmptyState icon={Archive} title={query ? `Nothing archived matches “${query}”` : 'Nothing archived yet'}>
             Archive a tab to close it without losing it. Hover a tab and press the box icon, or let Tidy Up suggest some.
           </EmptyState>
@@ -61,7 +58,7 @@ export function ArchiveView() {
                 </button>
               </div>
             </div>
-            <div className="card">
+            <div className="list-card">
               <TabList records={s.tabs} groups={workspaces} onSimilar={openRelated} />
             </div>
           </section>

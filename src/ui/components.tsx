@@ -58,9 +58,13 @@ export function Spinner({ label }: { label?: string }) {
 
 export function LoadingRows({ rows = 6 }: { rows?: number }) {
   return (
-    <div className="col" style={{ padding: 12, gap: 10 }} aria-busy="true">
+    <div className="col" style={{ gap: 0, padding: 4 }} aria-busy="true" aria-label="Loading">
       {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="skeleton" style={{ height: 30, opacity: 1 - i * 0.12 }} />
+        <div key={i} className="skeleton-row" style={{ opacity: 1 - i * 0.13 }}>
+          <div className="skeleton" style={{ width: 16, height: 16, borderRadius: 4 }} />
+          <div className="skeleton" style={{ height: 9, width: `${78 - ((i * 17) % 40)}%` }} />
+          <div className="skeleton" style={{ height: 9 }} />
+        </div>
       ))}
     </div>
   );

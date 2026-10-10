@@ -1,4 +1,4 @@
-import { ArchiveRestore, Eye, MoreHorizontal, Save, Shield, ShieldOff, Trash2, Ungroup, FolderOpen } from 'lucide-react';
+import { ArchiveRestore, Eye, MoreHorizontal, Pencil, Save, Shield, ShieldOff, Trash2, Ungroup, FolderOpen } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { indexDoc, quickSearch } from '../../core/search';
 import { rpc } from '../../shared/messages';
@@ -14,11 +14,9 @@ export function GroupView({ id }: { id: string | undefined }) {
   const { records, workspaces, wsMap, windows, query, openRelated } = useData();
   const fb = useFeedback();
   const ws = id ? wsMap.get(id) : undefined;
-  const [name, setName] = useState(ws?.name ?? '');
   const [note, setNote] = useState(ws?.summary ?? '');
   const [picking, setPicking] = useState(false);
   useEffect(() => {
-    setName(ws?.name ?? '');
     setNote(ws?.summary ?? '');
   }, [ws?.id, ws?.name, ws?.summary]);
 
@@ -26,7 +24,7 @@ export function GroupView({ id }: { id: string | undefined }) {
   const filtered = useMemo(() => (query.trim() ? quickSearch(members.map(indexDoc), query, 2000).map((h) => h.doc) : members), [members, query]);
   if (!ws) {
     return (
-      <div className="card">
+      <div className="list-card">
         <EmptyState icon={FolderOpen} title="This group no longer exists">
           <a href="#/">Back to Tabs</a>
         </EmptyState>
@@ -36,39 +34,30 @@ export function GroupView({ id }: { id: string | undefined }) {
   const open = filtered.filter(isLive);
   const archived = sortRecent(filtered.filter((r) => r.status === 'archived'));
   const update = (patch: { name?: string; summary?: string; color?: GroupColor; isProtected?: boolean }) =>
-    rpc('workspaces.update', { id: ws.id, patch }).catch((e) => {
-      fb.error(e);
-      setName(ws.name);
-    });
+    rpc('workspaces.update', { id: ws.id, patch }).catch((e) => fb.error(e));
 
   return (
     <>
-      <div className="col" style={{ gap: 10 }}>
-        <div className="row" style={{ alignItems: 'flex-start', gap: 12 }}>
-          <button className="btn ghost icon" style={{ marginTop: 3 }} aria-label="Change color" aria-expanded={picking} onClick={() => setPicking((p) => !p)}>
-            <WsDot color={ws.color} size={14} />
+      <div className="col" style={{ gap: 8 }}>
+        <div className="page-intro">
+          <input
+            className="note-input grow"
+            aria-label="Note"
+            placeholder="Add a note about this group"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            onBlur={() => note !== ws.summary && update({ summary: note })}
+            onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+          />
+          {ws.isProtected && (
+            <span className="pill" title="These tabs never sleep or get archived automatically">
+              <Shield style={{ width: 11, height: 11 }} /> Protected
+            </span>
+          )}
+          <button className="btn quiet icon" aria-label="Change color" aria-expanded={picking} title="Color" onClick={() => setPicking((p) => !p)}>
+            <WsDot color={ws.color} size={11} />
           </button>
-          <div className="col grow" style={{ gap: 4 }}>
-            <input
-              className="title-input"
-              aria-label="Group name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onBlur={() => name.trim() && name !== ws.name && update({ name })}
-              onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-            />
-            <input
-              className="input"
-              aria-label="Note"
-              placeholder="Add a note"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              onBlur={() => note !== ws.summary && update({ summary: note })}
-              onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-              style={{ background: 'transparent', paddingLeft: 0, color: 'var(--text-2)' }}
-            />
-          </div>
-          <button className="btn primary" onClick={() => fb.run(() => rpc('workspaces.switch', { id: ws.id }), () => `Showing ${ws.name}`)}>
+          <button className="btn" onClick={() => fb.run(() => rpc('workspaces.switch', { id: ws.id }), () => `Showing ${ws.name}`)}>
             <Eye /> Show in Chrome
           </button>
           <Menu
@@ -78,6 +67,14 @@ export function GroupView({ id }: { id: string | undefined }) {
               </button>
             )}
             items={[
+              {
+                label: 'Rename…',
+                icon: Pencil,
+                onClick: async () => {
+                  const name = await fb.prompt({ title: 'Rename group', initial: ws.name, confirmLabel: 'Rename' });
+                  if (name && name !== ws.name) await update({ name });
+                },
+              },
               {
                 label: ws.isProtected ? 'Allow sleeping and archiving' : 'Keep these tabs open (protect)',
                 icon: ws.isProtected ? ShieldOff : Shield,
@@ -99,31 +96,22 @@ export function GroupView({ id }: { id: string | undefined }) {
                 icon: Trash2,
                 danger: true,
                 onClick: async () => {
-                  if (await fb.confirm({ title: `Delete “${ws.name}”?`, body: 'Its tabs stay where they are; only the group goes away. You can undo.', confirmLabel: 'Delete group', danger: true })) {
-                    await fb.run(() => rpc('workspaces.delete', { id: ws.id }), () => `Deleted ${ws.name}`);
-                    navigate('/');
-                  }
+                  await fb.run(() => rpc('workspaces.delete', { id: ws.id }), () => `Deleted ${ws.name}. Tabs stay open`);
+                  navigate('/');
                 },
               },
             ]}
           />
         </div>
-        <div className="row" style={{ gap: 14, flexWrap: 'wrap', paddingLeft: 42 }}>
-          {picking && (
-            <ColorSwatches
-              value={ws.color}
-              onChange={(color) => {
-                void update({ color });
-                setPicking(false);
-              }}
-            />
-          )}
-          {ws.isProtected && (
-            <span className="pill accent">
-              <Shield style={{ width: 11, height: 11 }} /> Protected
-            </span>
-          )}
-        </div>
+        {picking && (
+          <ColorSwatches
+            value={ws.color}
+            onChange={(color) => {
+              void update({ color });
+              setPicking(false);
+            }}
+          />
+        )}
       </div>
 
       <section className="tab-section">
@@ -135,7 +123,7 @@ export function GroupView({ id }: { id: string | undefined }) {
             <span className="count">{open.length}</span>
           </div>
         )}
-        <div className="card">
+        <div className="list-card">
           <TabList
             records={open}
             groups={workspaces}
@@ -159,7 +147,7 @@ export function GroupView({ id }: { id: string | undefined }) {
               <ArchiveRestore /> Reopen all
             </button>
           </div>
-          <div className="card">
+          <div className="list-card">
             <TabList records={archived} groups={workspaces} onSimilar={openRelated} />
           </div>
         </section>

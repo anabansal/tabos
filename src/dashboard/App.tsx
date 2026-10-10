@@ -1,5 +1,5 @@
-import { AlertTriangle, Archive, Clock, Layers, Plus, Search, Settings as SettingsIcon, Sparkles, Wand2, Inbox } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, Archive, Clock, Inbox, Keyboard, Layers, Plus, Search, Settings as SettingsIcon, Sparkles, Wand2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { rpc, type WorkerStatus } from '../shared/messages';
 import type { TabRecord } from '../shared/types';
 import { Banner, LoadingRows, WsDot } from '../ui/components';
@@ -8,6 +8,7 @@ import { navigate, useChromeWindows, useHashRoute, useRecords, useSettings, useT
 import { DRAG_TYPE, useGroupActions } from '../ui/TabList';
 import { DataProvider, isLive, type DashboardData } from './data';
 import { RelatedDrawer } from './RelatedDrawer';
+import { SearchPanel } from './SearchPanel';
 import { ArchiveView } from './views/ArchiveView';
 import { GroupTabsView } from './views/GroupTabsView';
 import { GroupView } from './views/GroupView';
@@ -31,6 +32,19 @@ const ALIASES: Record<string, string> = {
   activity: 'history',
 };
 
+const TITLES: Record<string, string> = {
+  '': 'Tabs',
+  archive: 'Archive',
+  history: 'History',
+  'group-tabs': 'Group Tabs',
+  tidy: 'Tidy Up',
+  search: 'Search',
+  settings: 'Settings',
+};
+
+const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform);
+export const MOD = isMac ? '⌘' : 'Ctrl';
+
 export function App() {
   const route = useHashRoute();
   const records = useRecords();
@@ -41,7 +55,8 @@ export function App() {
   const ga = useGroupActions();
   const [related, setRelated] = useState<TabRecord | null>(null);
   const [status, setStatus] = useState<WorkerStatus | null>(null);
-  const [query, setQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [dropOn, setDropOn] = useState<string | null>(null);
   useTheme(settings);
 
@@ -54,12 +69,30 @@ export function App() {
   const raw = route.path[0] ?? '';
   const view = raw in ALIASES ? ALIASES[raw] : raw;
   const firstRun = raw === 'welcome';
-  // Leaving a page clears the filter, so a stale query never hides tabs.
-  useEffect(() => setQuery(view === 'search' ? (route.params.get('q') ?? '') : ''), [view, route.params]);
   useEffect(() => {
     if (raw === 'activity') navigate('/history?tab=undo');
     if (raw === 'windows') navigate('/?by=window');
   }, [raw]);
+
+  // Keyboard: Ctrl/⌘ K or "/" opens search; "?" shows shortcuts.
+  const onKey = useCallback((e: KeyboardEvent) => {
+    const target = e.target as HTMLElement;
+    const typing = target.closest('input, textarea, select, [contenteditable="true"]');
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      setSearchOpen((o) => !o);
+    } else if (!typing && e.key === '/') {
+      e.preventDefault();
+      setSearchOpen(true);
+    } else if (!typing && e.key === '?') {
+      e.preventDefault();
+      setShortcutsOpen(true);
+    }
+  }, []);
+  useEffect(() => {
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onKey]);
 
   const counts = useMemo(() => {
     const c = { live: 0, archived: 0, other: 0, byWs: new Map<string, number>() };
@@ -75,7 +108,7 @@ export function App() {
 
   const wsMap = useMemo(() => new Map((workspaces ?? []).map((w) => [w.id, w])), [workspaces]);
   const data: DashboardData | null =
-    records && workspaces && settings ? { records, workspaces, wsMap, settings, saveSettings, windows, query, openRelated: setRelated } : null;
+    records && workspaces && settings ? { records, workspaces, wsMap, settings, saveSettings, windows, query: '', openRelated: setRelated } : null;
 
   const dropProps = (groupId: string | null, name?: string) => ({
     onDragOver: (e: React.DragEvent) => {
@@ -104,6 +137,13 @@ export function App() {
   };
 
   const groupId = view === 'group' ? route.path[1] : null;
+  const currentGroup = groupId ? wsMap.get(groupId) : undefined;
+  const onlyOther = view === '' && route.params.get('group') === 'none';
+  const title = currentGroup?.name ?? (onlyOther ? 'Other Tabs' : (TITLES[view] ?? 'TabOS'));
+  useEffect(() => {
+    document.title = `${title} · TabOS`;
+  }, [title]);
+
   return (
     <div className="app">
       <aside className="sidebar">
@@ -112,7 +152,7 @@ export function App() {
           TabOS
         </div>
         <nav className="nav" aria-label="Main">
-          <a href="#/" className={view === '' ? 'active' : ''}>
+          <a href="#/" className={view === '' && !onlyOther ? 'active' : ''}>
             <Layers /> Tabs <span className="count">{counts.live}</span>
           </a>
           <a href="#/archive" className={view === 'archive' ? 'active' : ''}>
@@ -124,8 +164,8 @@ export function App() {
         </nav>
         <div>
           <div className="nav-head">
-            <span className="section-title">Groups</span>
-            <button className="btn ghost icon sm" aria-label="New group" title="New group" onClick={newGroup}>
+            <span className="label">Groups</span>
+            <button className="btn quiet icon sm" aria-label="New group" title="New group" onClick={newGroup}>
               <Plus />
             </button>
           </div>
@@ -137,15 +177,11 @@ export function App() {
                 <span className="count">{counts.byWs.get(w.id) ?? 0}</span>
               </a>
             ))}
-            <a href="#/?group=none" className={`${dropOn === 'none' ? 'drop-target' : ''}`} {...dropProps(null)}>
-              <Inbox /> Other tabs <span className="count">{counts.other}</span>
+            <a href="#/?group=none" className={`${onlyOther ? 'active' : ''} ${dropOn === 'none' ? 'drop-target' : ''}`} {...dropProps(null)}>
+              <Inbox /> Other Tabs <span className="count">{counts.other}</span>
             </a>
-            {!workspaces?.length && (
-              <span className="faint small" style={{ padding: '4px 10px' }}>
-                Drag tabs here, or use Group Tabs.
-              </span>
-            )}
           </nav>
+          {!workspaces?.length && <div className="nav-hint">Use Group Tabs, or drag tabs onto “+”.</div>}
         </div>
         <nav className="nav">
           <a href="#/settings" className={view === 'settings' ? 'active' : ''}>
@@ -153,63 +189,117 @@ export function App() {
           </a>
         </nav>
         <div className="sidebar-foot">
-          <span className="kbd">Alt</span> <span className="kbd">Shift</span> <span className="kbd">K</span> opens TabOS anywhere
+          <button onClick={() => setShortcutsOpen(true)}>
+            <Keyboard style={{ width: 13, height: 13 }} /> Keyboard shortcuts
+          </button>
         </div>
       </aside>
 
       <main className="main">
-        <div className="toolbar">
-          <form
-            className="search-field"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (query.trim()) navigate(`/search?q=${encodeURIComponent(query)}`);
-            }}
-          >
-            <Search />
-            <input
-              className="input"
-              placeholder="Search tabs. Press Enter to ask in your own words"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Escape' && setQuery('')}
-              aria-label="Search tabs"
-            />
-          </form>
+        <header className="toolbar">
+          {currentGroup && <WsDot color={currentGroup.color} />}
+          <h1>{title}</h1>
           <div className="spacer" />
-          <button className="btn" onClick={() => navigate('/group-tabs')}>
-            <Wand2 /> Group Tabs
+          <button className="search-trigger" onClick={() => setSearchOpen(true)} aria-label="Search tabs">
+            <Search />
+            <span>Search</span>
+            <span className="kbds">
+              <span className="kbd">{MOD}</span>
+              <span className="kbd">K</span>
+            </span>
           </button>
-          <button className="btn primary" onClick={() => navigate('/tidy')}>
-            <Sparkles /> Tidy Up
-          </button>
-        </div>
+          {view !== 'group-tabs' && (
+            <button className="btn actions-hide-sm" onClick={() => navigate('/group-tabs')}>
+              <Wand2 /> Group Tabs
+            </button>
+          )}
+          {view !== 'tidy' && (
+            <button className="btn primary" onClick={() => navigate('/tidy')}>
+              <Sparkles /> Tidy Up
+            </button>
+          )}
+        </header>
 
-        <div className="page">
-          {status && !status.db.ok && (
-            <Banner kind="error" icon={AlertTriangle}>
-              <strong>TabOS can't save right now.</strong> {status.db.error}. Reload the extension from chrome://extensions; if it keeps happening, check free disk space.
-            </Banner>
-          )}
-          {!data ? (
-            <div className="card">
-              <LoadingRows />
-            </div>
-          ) : (
-            <DataProvider value={data}>
-              {view === '' && <TabsHome firstRun={firstRun} by={route.params.get('by') === 'window' ? 'window' : 'group'} onlyOther={route.params.get('group') === 'none'} />}
-              {view === 'group' && <GroupView id={route.path[1]} />}
-              {view === 'archive' && <ArchiveView />}
-              {view === 'history' && <HistoryView tab={route.params.get('tab') ?? 'closed'} />}
-              {view === 'tidy' && <TidyView />}
-              {view === 'group-tabs' && <GroupTabsView />}
-              {view === 'search' && <SearchView query={route.params.get('q') ?? ''} />}
-              {view === 'settings' && <SettingsView />}
-              {related && <RelatedDrawer record={related} onClose={() => setRelated(null)} />}
-            </DataProvider>
-          )}
+        <div className="content">
+          <div className="page">
+            {status && !status.db.ok && (
+              <Banner kind="error" icon={AlertTriangle}>
+                <span>
+                  <strong>TabOS can’t save right now.</strong> {status.db.error}. Reload the extension from chrome://extensions; if it keeps happening, check free disk space.
+                </span>
+              </Banner>
+            )}
+            {!data ? (
+              <div className="list-card">
+                <LoadingRows />
+              </div>
+            ) : (
+              <DataProvider value={data}>
+                {view === '' && <TabsHome firstRun={firstRun} by={route.params.get('by') === 'window' ? 'window' : 'group'} onlyOther={onlyOther} />}
+                {view === 'group' && <GroupView id={route.path[1]} />}
+                {view === 'archive' && <ArchiveView />}
+                {view === 'history' && <HistoryView tab={route.params.get('tab') ?? 'closed'} />}
+                {view === 'tidy' && <TidyView />}
+                {view === 'group-tabs' && <GroupTabsView />}
+                {view === 'search' && <SearchView query={route.params.get('q') ?? ''} />}
+                {view === 'settings' && <SettingsView />}
+                {related && <RelatedDrawer record={related} onClose={() => setRelated(null)} />}
+                {searchOpen && <SearchPanel onClose={() => setSearchOpen(false)} />}
+              </DataProvider>
+            )}
+          </div>
         </div>
       </main>
+      {shortcutsOpen && <ShortcutsSheet onClose={() => setShortcutsOpen(false)} />}
+    </div>
+  );
+}
+
+function ShortcutsSheet({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', k);
+    return () => window.removeEventListener('keydown', k);
+  }, [onClose]);
+  const rows: Array<[string[], string]> = [
+    [[MOD, 'K'], 'Search'],
+    [['/'], 'Search'],
+    [['Tab'], 'Ask in your own words (in search)'],
+    [['↑', '↓', '↵'], 'Move through results and open'],
+    [['Esc'], 'Close'],
+    [['Alt', 'Shift', 'K'], 'Open the TabOS popup from any page'],
+    [['Alt', 'Shift', 'D'], 'Open this window from any page'],
+    [['?'], 'Show these shortcuts'],
+  ];
+  return (
+    <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="dialog" role="dialog" aria-modal="true" aria-labelledby="kb-title" style={{ width: 'min(420px, 100%)' }}>
+        <div className="dialog-head">
+          <h2 id="kb-title">Keyboard shortcuts</h2>
+        </div>
+        <div className="dialog-body">
+          {rows.map(([keys, label]) => (
+            <div key={label + keys.join()} className="row" style={{ height: 32 }}>
+              <span className="grow" style={{ color: 'var(--text)' }}>
+                {label}
+              </span>
+              {keys.map((k) => (
+                <span key={k} className="kbd">
+                  {k}
+                </span>
+              ))}
+            </div>
+          ))}
+          <div className="small faint" style={{ marginTop: 8 }}>
+            Change the browser-wide shortcuts at chrome://extensions/shortcuts.
+          </div>
+        </div>
+        <div className="dialog-foot">
+          <button className="btn primary" onClick={onClose}>
+            Done
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

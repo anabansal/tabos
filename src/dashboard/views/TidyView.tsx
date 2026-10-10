@@ -111,11 +111,11 @@ export function TidyView() {
         </Banner>
       )}
       {!preview && !error ? (
-        <div className="card">
+        <div className="list-card">
           <LoadingRows rows={3} />
         </div>
       ) : preview && preview.sleep.length + preview.archive.length + dupCandidates.length === 0 ? (
-        <div className="card">
+        <div className="list-card">
           <EmptyState icon={Sparkles} title="Already tidy">
             No tab has been idle for {sleepAfter < 60 ? `${sleepAfter} minutes` : `${sleepAfter / 60} hours`}, nothing looks forgotten, and there are no duplicates.
             <div style={{ marginTop: 12 }}>
@@ -200,11 +200,8 @@ export function TidyView() {
 
 function Header() {
   return (
-    <div className="page-head">
-      <div>
-        <h1>Tidy Up</h1>
-        <div className="subtitle">Free up memory and clear clutter. Nothing is lost, and you can undo it all.</div>
-      </div>
+    <div className="page-intro">
+          <p className="lede">Free up memory and clear clutter. Nothing is lost, and you can undo it all.</p>
     </div>
   );
 }

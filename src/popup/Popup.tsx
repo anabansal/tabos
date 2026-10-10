@@ -91,7 +91,7 @@ export function Popup() {
         </button>
       </header>
 
-      <div className="search-field" style={{ margin: '0 14px' }}>
+      <div className="search-field">
         <Search />
         <input className="input" autoFocus placeholder="Search tabs" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onKey} aria-label="Search tabs" />
       </div>
@@ -123,29 +123,27 @@ export function Popup() {
       ) : (
         <>
           {cur && isLive(cur) && (
-            <section className="grouped popup-inset">
-              <div className="item">
-                <Favicon url={cur.url} />
-                <div className="grow" style={{ minWidth: 0 }}>
-                  <div className="ellipsis" style={{ fontWeight: 500 }} title={cur.title}>
-                    {cur.title}
-                  </div>
-                  <Menu
-                    align="left"
-                    trigger={(t) => (
-                      <button className="group-chip" onClick={t} aria-label="Change group">
-                        {curGroup ? <WsDot color={curGroup.color} size={8} /> : null}
-                        {curGroup ? curGroup.name : 'Add to a group'}
-                        <ChevronDown style={{ width: 12, height: 12 }} />
-                      </button>
-                    )}
-                    items={ga.menuItems([cur.id], groups, cur.workspaceId)}
-                  />
+            <section className="popup-current" aria-label="This tab">
+              <Favicon url={cur.url} />
+              <div className="grow" style={{ minWidth: 0 }}>
+                <div className="ellipsis" style={{ fontWeight: 500 }} title={cur.title}>
+                  {cur.title}
                 </div>
-                <button className="btn ghost icon" title="Archive: close it but keep it" aria-label="Archive this tab" onClick={() => fb.run(() => rpc('tabs.archive', { recordIds: [cur.id] }), () => 'Archived')}>
-                  <Archive />
-                </button>
+                <Menu
+                  align="left"
+                  trigger={(t) => (
+                    <button className="group-chip" onClick={t} aria-label="Change group">
+                      {curGroup ? <WsDot color={curGroup.color} size={7} /> : null}
+                      {curGroup ? curGroup.name : 'Add to a group'}
+                      <ChevronDown style={{ width: 11, height: 11 }} />
+                    </button>
+                  )}
+                  items={ga.menuItems([cur.id], groups, cur.workspaceId)}
+                />
               </div>
+              <button className="btn quiet icon" title="Archive: close it but keep it" aria-label="Archive this tab" onClick={() => fb.run(() => rpc('tabs.archive', { recordIds: [cur.id] }), () => 'Archived')}>
+                <Archive />
+              </button>
             </section>
           )}
 
@@ -161,18 +159,18 @@ export function Popup() {
               ))}
               <button className="item popup-row" onClick={() => openDashboard('/?group=none')}>
                 <Inbox style={{ width: 14, height: 14, color: 'var(--text-3)' }} />
-                <span className="ellipsis grow">Other tabs</span>
+                <span className="ellipsis grow">Other Tabs</span>
                 <span className="faint tnum">{counts.other}</span>
               </button>
             </div>
-            {!groups.length && <div className="faint small" style={{ padding: '8px 18px 0' }}>No groups yet. Group Tabs sorts them for you in one click.</div>}
+            {!groups.length && <div className="faint small" style={{ padding: '6px 10px 0' }}>No groups yet. Group Tabs sorts your tabs in one click.</div>}
           </section>
 
           <footer className="popup-foot">
             <button className="btn primary grow" onClick={() => openDashboard('/tidy')}>
               <Sparkles /> {tidy ? `Tidy Up ${plural(tidy, 'Tab')}` : 'Tidy Up'}
             </button>
-            <button className="btn grow" onClick={() => openDashboard('/group-tabs')}>
+            <button className="btn" onClick={() => openDashboard('/group-tabs')}>
               <Wand2 /> Group Tabs
             </button>
           </footer>

@@ -77,11 +77,8 @@ export function SearchView({ query }: { query: string }) {
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <h1>Search</h1>
-          <div className="subtitle">Results for your search across open, archived and recently closed tabs. Try describing it: what it was about, what kind of page, and when.</div>
-        </div>
+      <div className="page-intro">
+          <p className="lede">Results for your search across open, archived and recently closed tabs. Try describing it: what it was about, what kind of page, and when.</p>
       </div>
       <div className="filters">
         <span className="faint row" style={{ gap: 6 }}>
@@ -122,7 +119,7 @@ export function SearchView({ query }: { query: string }) {
           </div>
         </div>
       ) : busy ? (
-        <div className="card">
+        <div className="list-card">
           {progress && (
             <div className="card-pad col" style={{ gap: 6 }}>
               <span className="muted">
@@ -136,13 +133,13 @@ export function SearchView({ query }: { query: string }) {
           <LoadingRows rows={5} />
         </div>
       ) : !hits.length ? (
-        <div className="card">
+        <div className="list-card">
           <EmptyState icon={SearchIcon} title="No matches">
             Try fewer words, a different time (“yesterday”, “last month”), or turn on history.
           </EmptyState>
         </div>
       ) : (
-        <div className="card" role="listbox" aria-label="Results">
+        <div className="list-card" role="listbox" aria-label="Results">
           {hits.map((h, i) => {
             const ws = h.doc.record?.workspaceId ? wsMap.get(h.doc.record.workspaceId) : undefined;
             return (

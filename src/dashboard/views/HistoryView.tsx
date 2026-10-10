@@ -23,11 +23,8 @@ export function HistoryView({ tab }: { tab: string }) {
   const current = tab === 'snapshots' ? 'sessions' : TABS.some((t) => t.id === tab) ? tab : 'closed';
   return (
     <>
-      <div className="page-head">
-        <div>
-          <h1>History</h1>
-          <div className="subtitle">Get back tabs you closed, whole sessions, or undo anything TabOS did.</div>
-        </div>
+      <div className="page-intro">
+          <p className="lede">Get back tabs you closed, whole sessions, or undo anything TabOS did.</p>
         <div className="spacer" />
         <div className="segmented" role="group" aria-label="History section">
           {TABS.map((t) => (
@@ -57,7 +54,7 @@ function Closed() {
   };
   return (
     <>
-      <div className="card">
+      <div className="list-card">
         <TabList
           records={closed}
           groups={workspaces}
@@ -160,7 +157,7 @@ function Sessions() {
         </button>
       </div>
       {!snaps ? (
-        <div className="card">
+        <div className="list-card">
           <LoadingRows rows={3} />
         </div>
       ) : (
@@ -178,7 +175,7 @@ function Sessions() {
                 ))}
               </div>
             ) : (
-              <div className="card">
+              <div className="list-card">
                 <EmptyState icon={Save} title="No saved sessions">
                   Save your current windows before a big change, then bring them back with one click.
                 </EmptyState>
@@ -291,7 +288,7 @@ function UndoHistory() {
   if (!entries) return <LoadingRows />;
   if (!entries.length)
     return (
-      <div className="card">
+      <div className="list-card">
         <EmptyState icon={Undo2} title="Nothing to undo">
           Everything TabOS does, whether you asked or it happened automatically, appears here with an Undo button.
         </EmptyState>

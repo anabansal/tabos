@@ -53,7 +53,7 @@ TabOS has three places and two buttons.
   </tr>
   <tr>
     <td align="center">Tidy Up: three switches, one button</td>
-    <td align="center">Search in your own words</td>
+    <td align="center">Search: <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>K</kbd>, then <kbd>Tab</kbd> to ask in your own words</td>
   </tr>
   <tr>
     <td><img src="docs/screenshots/tab-menu.png" alt="Tab menu"></td>
@@ -82,7 +82,7 @@ TabOS has three places and two buttons.
 ### More features
 
 - **Windows:** switch Tabs to *Windows* to see each window, merge them, or archive or save one as a session. Move tabs between windows from the ⋯ menu.
-- **Search everywhere:** the popup, the dashboard toolbar, and the address bar (type `tab` then a space).
+- **Search everywhere:** press <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>K</kbd> (or <kbd>/</kbd>) in TabOS for instant results, then <kbd>Tab</kbd> to ask in your own words. Also in the popup and the address bar (type `tab` then a space). Press <kbd>?</kbd> for all shortcuts.
 - **Similar tabs:** finds pages about the same thing across different sites.
 - **Duplicates:** the same page open twice (ignoring tracking parameters and `#anchors`) is offered for closing in Tidy Up.
 - **Private AI by default:** grouping, search and similar tabs run offline. You can optionally connect Ollama (on your computer), any OpenAI-compatible API, or the Anthropic API. Anything that would leave your device needs your explicit consent and never includes page contents.
@@ -215,3 +215,5 @@ Issues and pull requests are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING
 ## License
 
 [MIT](LICENSE) © Anant Bansal
+
+TabOS bundles the [Inter](https://rsms.me/inter/) typeface by Rasmus Andersson, licensed under the SIL Open Font License 1.1. The icons are [Lucide](https://lucide.dev) (ISC).

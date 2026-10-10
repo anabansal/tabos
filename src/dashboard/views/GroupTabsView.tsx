@@ -93,11 +93,8 @@ export function GroupTabsView() {
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <h1>Group Tabs</h1>
-          <div className="subtitle">TabOS suggests groups for your open tabs. You can rename, move or skip anything before applying.</div>
-        </div>
+      <div className="page-intro">
+          <p className="lede">TabOS suggests groups for your open tabs. You can rename, move or skip anything before applying.</p>
       </div>
 
       {!proposal && (
@@ -168,7 +165,7 @@ export function GroupTabsView() {
             </Banner>
           ))}
           {!proposal.groups.length ? (
-            <div className="card">
+            <div className="list-card">
               <EmptyState icon={Sparkles} title="No clear groups found">
                 These tabs don't have enough in common yet. You can still drag tabs onto a group in the sidebar.
               </EmptyState>
@@ -181,8 +178,8 @@ export function GroupTabsView() {
             </div>
           )}
           {proposal.unassigned.length > 0 && (
-            <details className="card">
-              <summary className="card-pad" style={{ cursor: 'pointer' }}>
+            <details className="list-card disclosure">
+              <summary>
                 {plural(proposal.unassigned.length, 'tab')} won't be grouped
               </summary>
               <div style={{ paddingBottom: 8 }}>
@@ -251,9 +248,9 @@ function GroupCard({
             )}
             items={GROUP_COLORS.map((c: GroupColor) => ({ label: c[0].toUpperCase() + c.slice(1), onClick: () => onChange({ color: c }) }))}
           />
-          <input className="input name-input grow" value={g.name} onChange={(e) => onChange({ name: e.target.value })} aria-label="Workspace name" disabled={!!g.existingWorkspaceId} />
+          <input className="name-input grow" value={g.name} onChange={(e) => onChange({ name: e.target.value })} aria-label="Group name" disabled={!!g.existingWorkspaceId} />
           <button
-            className={`btn sm ${g.accepted ? '' : 'primary'}`}
+            className={`btn sm ${g.accepted ? 'quiet' : 'primary'}`}
             onClick={() => onChange({ accepted: !g.accepted })}
             aria-pressed={!g.accepted}
             title={g.accepted ? 'Skip this group' : 'Include this group'}

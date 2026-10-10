@@ -18,14 +18,15 @@ import {
   Trash2,
   X,
   FolderMinus,
+  Volume2,
 } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { rpc } from '../shared/messages';
 import type { TabRecord, Workspace } from '../shared/types';
 import { displayUrl } from '../shared/url';
-import { EmptyState, Favicon, Menu, WsDot, type MenuItem } from './components';
+import { EmptyState, Favicon, Menu, type MenuItem } from './components';
 import { useFeedback } from './feedback';
-import { ago, plural } from './format';
+import { GROUP_HEX, ago, plural } from './format';
 
 export const DRAG_TYPE = 'application/x-tabos-records';
 const isLive = (r: TabRecord) => r.status === 'open' || r.status === 'sleeping';
@@ -156,7 +157,7 @@ export function TabList({ records, groups, windows = [], showGroup, showWindow, 
       </div>
       {records.length > limit && (
         <div className="row" style={{ justifyContent: 'center', padding: 12 }}>
-          <button className="btn plain" onClick={() => setLimit((l) => l + 300)}>
+          <button className="btn quiet" onClick={() => setLimit((l) => l + 300)}>
             Show {Math.min(300, records.length - limit)} more
           </button>
         </div>
@@ -203,7 +204,7 @@ export function TabList({ records, groups, windows = [], showGroup, showWindow, 
                 : { label: `Delete ${plural(selSaved.length, 'tab')}`, icon: Trash2, danger: true, onClick: bulk.remove },
             ]}
           />
-          <button className="btn plain" onClick={clear}>
+          <button className="btn quiet" onClick={clear}>
             Done
           </button>
         </div>
@@ -299,33 +300,43 @@ function Row({
         <Favicon url={r.url} />
         <input type="checkbox" className="box" checked={selected} onChange={onToggle} aria-label={`Select ${r.title}`} />
       </div>
-      <div style={{ minWidth: 0 }}>
-        <div className="title ellipsis" onClick={open} title={r.title} role="link" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && open()}>
+      <div className="tab-main">
+        <span className="title" onClick={open} title={r.title} role="link" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && open()}>
           {r.title || displayUrl(r.url)}
-        </div>
-        <div className="sub">
-          <span className="ellipsis">{r.domain || displayUrl(r.url)}</span>
-          {windowLabel && <span className="nowrap">· {windowLabel}</span>}
+        </span>
+        <span className="meta">
+          {r.domain || displayUrl(r.url)}
+          {windowLabel && <> · {windowLabel}</>}
           {group && (
-            <span className="row nowrap" style={{ gap: 5 }}>
-              · <WsDot color={group.color} size={7} /> {group.name}
-            </span>
+            <>
+              {' · '}
+              <span className="ws-dot" style={{ background: GROUP_HEX[group.color] }} />
+              {group.name}
+            </>
           )}
-        </div>
+        </span>
         {reasons && reasons.length > 0 && (
-          <div className="reasons">
+          <span className="reasons">
             {reasons.map((x) => (
               <span key={x} className="reason">
                 {x}
               </span>
             ))}
-          </div>
+          </span>
         )}
       </div>
       <div className="trail">
+        <div className="state">
+          {r.audible && <Volume2 aria-label="Playing audio" />}
+          {r.isProtected && <Shield aria-label="Protected" />}
+          {r.status === 'sleeping' && <Moon aria-label="Sleeping to save memory" />}
+          <span className="when" title={when ? new Date(when).toLocaleString() : ''}>
+            {ago(when)}
+          </span>
+        </div>
         <div className="actions">
           {live ? (
-            <button className="btn ghost icon sm" title="Archive: close it but keep it" aria-label="Archive" onClick={() => fb.run(() => rpc('tabs.archive', { recordIds: [r.id] }), () => 'Archived')}>
+            <button className="btn quiet icon sm" title="Archive: close it but keep it" aria-label="Archive" onClick={() => fb.run(() => rpc('tabs.archive', { recordIds: [r.id] }), () => 'Archived')}>
               <Archive />
             </button>
           ) : (
@@ -335,19 +346,13 @@ function Row({
           )}
           <Menu
             trigger={(t) => (
-              <button className="btn ghost icon sm" aria-label="More" onClick={t}>
+              <button className="btn quiet icon sm" aria-label="More" onClick={t}>
                 <MoreHorizontal />
               </button>
             )}
             items={items}
           />
         </div>
-        {r.isProtected && <Shield className="state-icon" style={{ color: 'var(--accent)' }} aria-label="Protected" />}
-        {r.status === 'sleeping' && <Moon className="state-icon" aria-label="Sleeping to save memory" />}
-        {r.audible && <span className="pill accent">Playing</span>}
-        <span className="when" title={when ? new Date(when).toLocaleString() : ''}>
-          {ago(when)}
-        </span>
       </div>
     </div>
   );

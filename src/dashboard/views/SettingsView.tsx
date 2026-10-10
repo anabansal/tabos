@@ -31,14 +31,11 @@ export function SettingsView() {
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <h1>Settings</h1>
-          <div className="subtitle">The defaults work well for most people. Saved automatically.</div>
-        </div>
+      <div className="page-intro">
+          <p className="lede">The defaults work well for most people. Saved automatically.</p>
       </div>
 
-      <section className="card" style={{ maxWidth: 780 }}>
+      <section className="list-card" style={{ maxWidth: 780 }}>
         <Setting
           title="Group new tabs automatically"
           desc="New tabs join the group they clearly belong to, and a new group appears once 3 tabs share a topic. Runs privately on this computer. You can undo any change."
@@ -172,7 +169,7 @@ function Group({ title, id, children }: { title: string; id?: string; children: 
   return (
     <section className="col" style={{ gap: 8, maxWidth: 780 }} id={id}>
       <h2>{title}</h2>
-      <div className="card">{children}</div>
+      <div className="list-card">{children}</div>
     </section>
   );
 }
@@ -199,7 +196,7 @@ function ProtectedSites({ values, onChange }: { values: string[]; onChange: (v: 
   const [editing, setEditing] = useState(false);
   const pretty = values.slice(0, 3).map(friendlySite);
   return (
-    <div className={`setting ${editing ? 'stack' : ''}`}>
+    <div className="setting stack">
       <div className="row" style={{ alignItems: 'flex-start' }}>
         <div className="grow">
           <div style={{ fontWeight: 550 }}>Sites that always stay awake</div>

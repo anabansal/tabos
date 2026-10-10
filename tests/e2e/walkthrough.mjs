@@ -115,6 +115,22 @@ try {
     await go(firstGroup.slice(1), 1000);
     await shot(dash, '08-group');
   }
+  await go('/', 800);
+  await dash.bringToFront();
+  await dash.keyboard.down('Control');
+  await dash.keyboard.press('KeyK');
+  await dash.keyboard.up('Control');
+  await wait(400);
+  await dash.keyboard.type('react');
+  await wait(400);
+  await shot(dash, '15-search-panel');
+  await dash.evaluate(() => { const i = document.querySelector('.palette-input input'); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; set.call(i, 'that paper about semantic entropy I opened last week'); i.dispatchEvent(new Event('input', { bubbles: true })); });
+  await wait(300);
+  await dash.keyboard.press('Tab');
+  await wait(1500);
+  await shot(dash, '16-search-ask');
+  await dash.keyboard.press('Escape');
+  await dash.keyboard.press('Escape');
   await go('/tidy', 1800);
   await shot(dash, '09-tidy');
   await go(`/search?q=${encodeURIComponent('that paper about semantic entropy I opened last week')}`, 2000);
